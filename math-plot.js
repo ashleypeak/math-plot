@@ -32,7 +32,11 @@ class Rational {
 
         this.numerator = numerator;
         this.denominator = denominator;
+        this.simplify();
     }
+
+
+    /** GETTERS AND SETTERS */
 
     /**
      * Returns a floating-point approximation of the Rational.
@@ -43,36 +47,7 @@ class Rational {
         return this.numerator / this.denominator;
     }
 
-    /**
-     * Ensures numerator and denominator are coprime, and denominator is not
-     * negative. Returns nothing.
-     */
-    simplify() {
-        let gcd = this._gcd(this.numerator, this.denominator);
-
-        this.numerator /= gcd;
-        this.denominator /= gcd;
-
-        if(this.denominator < 0) {
-            this.numerator *= -1;
-            this.denominator = Math.abs(this.denominator);
-        }
-    }
-
-    /**
-     * Find the greatest common divisor of _integers_ `a` and `b`.
-     * 
-     * @param  {Number} a An integer
-     * @param  {Number} b An integer
-     * @return {Number}   The GCD of `a` and `b`
-     */
-    _gcd(a, b) {
-        if(b == 0) {
-            return a;
-        }
-
-        return this._gcd(b, a % b);
-    }
+    /** OPERATORS */
 
     /**
      * Adds an integer or Rational to this Rational. Returns the sum, but does
@@ -135,6 +110,21 @@ class Rational {
     }
 
     /**
+     * Tests if `this` is equal to `number`.
+     * 
+     * @param  {Number|Rational} number The number to be compared
+     * @return {Boolean}                True if `this` = `number`
+     */
+    equal(number) {
+        if(!(number instanceof Rational)) {
+            number = new Rational(number);
+        }
+
+        return (this.numerator == number.numerator &&
+            this.denominator == number.denominator);
+    }
+
+    /**
      * Tests if `this` is greater than `number`.
      * 
      * @param  {Number|Rational} number The number to be compared
@@ -160,6 +150,116 @@ class Rational {
         }
 
         return this.approx < number;
+    }
+
+
+    /** MISCELLANEOUS */
+
+    /**
+     * Ensures numerator and denominator are coprime, and denominator is not
+     * negative. Returns nothing.
+     */
+    simplify() {
+        let gcd = this._gcd(this.numerator, this.denominator);
+
+        this.numerator /= gcd;
+        this.denominator /= gcd;
+
+        if(this.denominator < 0) {
+            this.numerator *= -1;
+            this.denominator = Math.abs(this.denominator);
+        }
+    }
+
+    /**
+     * Find the greatest common divisor of _integers_ `a` and `b`.
+     * 
+     * @param  {Number} a An integer
+     * @param  {Number} b An integer
+     * @return {Number}   The GCD of `a` and `b`
+     */
+    _gcd(a, b) {
+        if(b == 0) {
+            return a;
+        }
+
+        return this._gcd(b, a % b);
+    }
+
+    /**
+     * Draw the Rational on the canvas at the position described by `position`.
+     * 
+     * - `position` must define top, and may define either left or right.
+     * - `areFractions` is used by the x axis labels, and if true indicates
+     *   that some of the labels are fractions. If true, it draws integral
+     *   labels slightly lower so they line up with the fractional labels.
+     * 
+     * @param  {CanvasRenderingContext2D} context The rendering anvas' context
+     * @param  {Object}  position     The position to draw the number
+     * @param  {Boolean} areFractions Are any of the other labels on the axis
+     *                                fractions?
+     */
+    draw(context, position, areFractions=false) {
+        if(this.denominator === 1) {
+            var numLabel = this.numerator.toString();
+            var width = context.measureText(numLabel).width;
+        } else {
+            var numLabel = Math.abs(this.numerator).toString();
+            var denomLabel = this.denominator.toString();
+
+            var numWidth = context.measureText(numLabel).width;
+            var denomWidth = context.measureText(denomLabel).width;
+
+            var width = Math.max(numWidth, denomWidth);
+        }
+
+        //we need left and top to draw
+        if(position.hasOwnProperty('left')) {
+            var left = position.left + 4;
+        } else if(position.hasOwnProperty('right')) {
+            var left = position.right - width - 4;
+        } else {
+            throw new Error('Position must have either left or right defined.');
+        }
+
+        if(position.hasOwnProperty('top')) {
+            var top = position.top;
+        } else {
+            throw new Error('Position must have top defined.');
+        }
+
+        if(this.denominator === 1) {
+            let posX = left;
+            let posY = top + FONTSIZE;
+
+            if(areFractions) {
+                posY += FONTSIZE / 2;
+            }
+
+            context.fillText(numLabel, posX, posY);
+        } else {
+            let posX = left + (width - numWidth) / 2;
+            let posY = top + FONTSIZE;
+            context.fillText(numLabel, posX, posY);
+
+            posX = left + (width - denomWidth) / 2;
+            posY = top + 2 * FONTSIZE;
+            context.fillText(denomLabel, posX, posY);
+
+            context.beginPath();
+            context.lineWidth = 1;
+            context.moveTo(left - 2, top + FONTSIZE + 3);
+            context.lineTo(left + width + 2, top + FONTSIZE + 3);
+            context.stroke();
+
+            if(this.numerator < 0) {
+                context.beginPath();
+                context.lineWidth = 1;
+                context.moveTo(left - 11, top + FONTSIZE + 3);
+                context.lineTo(left - 6, top + FONTSIZE + 3);
+                context.stroke();
+            }
+        }
     }
 }
 
@@ -361,14 +461,17 @@ class MathPlot extends HTMLElement {
             let stepSize = this._getStepSize('y');
             let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
             for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
-                let yPos = this.center.y - i.approx * this.unitSize.y;
+                if(!(i.equal(0))) {
+                    let yPos = this.center.y - i.approx * this.unitSize.y;
 
-                if(this.drawGrid) {
-                    this._drawLine(0, yPos, this.width - LABELWIDTH, yPos, 1,
-                        [5, 5]);
+                    this._drawLine(this.center.x, yPos, this.center.x + 6, yPos, 2);
+                    i.draw(this.context, {top: yPos, right: this.center.x});
+
+                    if(this.drawGrid) {
+                        this._drawLine(0, yPos, this.width - LABELWIDTH, yPos, 1,
+                            [5, 5]);
+                    }
                 }
-
-                this._drawLine(this.center.x, yPos, this.center.x + 6, yPos, 2);
             }
         }
 
@@ -394,18 +497,32 @@ class MathPlot extends HTMLElement {
 
             let stepSize = this._getStepSize('x');
             let xMin = this.range.x.min
-            let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
-            for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
-                let xPos = this.center.x - i.approx * this.unitSize.x;
+            let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
+            for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
+                if(!(i.equal(0))) {
+                    let xPos = this.center.x + i.approx * this.unitSize.x;
+                    //are any of the labels fractions? equivalent to asking if step
+                    //is not an integer
+                    let areFractions = stepSize.approx != parseInt(stepSize.approx);
 
-                if(this.drawGrid) {
-                    this._drawLine(xPos, LABELHEIGHT, xPos, this.height, 1,
-                        [5, 5]);
+                    this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
+                    if(i.greaterThan(0)) {
+                        i.draw(this.context, {top: this.center.y, left: xPos}, areFractions);
+                    } else if(i.lessThan(0)) {
+                        i.draw(this.context, {top: this.center.y, right: xPos}, areFractions);
+                    }
+
+                    if(this.drawGrid) {
+                        this._drawLine(xPos, LABELHEIGHT, xPos, this.height, 1,
+                            [5, 5]);
+                    }
                 }
-
-                this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
             }
         }
+
+        //draw origin
+        let origin = new Rational(0);
+        origin.draw(this.context, {top: this.center.y, right: this.center.x});
     }
 
     /**
