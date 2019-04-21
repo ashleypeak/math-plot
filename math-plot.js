@@ -17,21 +17,43 @@ class Rational {
     /**
      * Creates a new Rational, a rational number. Numerator and denominator
      * must both be integers, though denominator is optional.
+     *
+     * piFactor allows the Rational to be multiplied by some power of pi.
+     * Necessary because axes sometimes need to be multiples of pi. It's poorly
+     * supported and probably a bit overengineered, but I preferred a genuine
+     * representation of the number to a kludge for allowing pi multiples for
+     * units.
      * 
      * @constructs
      * @param  {Number} numerator   The numerator of the rational
      * @param  {Number} denominator The denominator of the rational
+     * @param  {Number} piFactor    Rational multiplied by pi^piFactor
      * @return {Rational}             A new Rational object
      */
-    constructor(numerator, denominator=1) {
-        if(typeof numerator !== 'number' || numerator !== parseInt(numerator) ||
-            typeof denominator !== 'number' || denominator !== parseInt(denominator) ||
-            denominator === 0) {
-            throw new Error('Invalid Rational');
+    constructor(numerator, denominator=1, piFactor=0) {
+        //if piFactor != 0, Rational is multiplied by pi^{piFactor}
+        this.piFactor = piFactor;
+
+        if(typeof numerator === 'number' && numerator === parseInt(numerator)) {
+            this.numerator = numerator;
+        } else if(typeof numerator === 'string' && /^[0-9]*pi$/.test(numerator)) {
+            let matches = numerator.match(/^([0-9]*)pi$/);
+            this.numerator = matches[1] == "" ? 1 : parseInt(matches[1]);
+            this.piFactor += 1;
+        } else {
+            throw new Error("Invalid numerator.");
         }
 
-        this.numerator = numerator;
-        this.denominator = denominator;
+        if(typeof denominator === 'number' && denominator === parseInt(denominator)) {
+            this.denominator = denominator;
+        } else if(typeof denominator === 'string' && /^[0-9]*pi$/.test(denominator)) {
+            let matches = denominator.match(/^([0-9]*)pi$/);
+            this.denominator = matches[1] == "" ? 1 : parseInt(matches[1]);
+            this.piFactor -= 1;
+        } else {
+            throw new Error("Invalid denominator.");
+        }
+
         this.simplify();
     }
 
@@ -44,7 +66,7 @@ class Rational {
      * @return {Number} A floating-point approximation
      */
     get approx() {
-        return this.numerator / this.denominator;
+        return (this.numerator * Math.PI**this.piFactor) / this.denominator;
     }
 
     /** OPERATORS */
@@ -61,9 +83,14 @@ class Rational {
             number = new Rational(number);
         }
 
+        if(this.piFactor !== number.piFactor) {
+            throw new Error('Adding of numbers with different pi factors not supported.')
+        }
+
         let ret = new Rational(
             this.numerator * number.denominator + number.numerator * this.denominator,
-            this.denominator * number.denominator);
+            this.denominator * number.denominator,
+            this.piFactor);
 
         ret.simplify();
         return ret;
@@ -81,9 +108,14 @@ class Rational {
             number = new Rational(number);
         }
 
+        if(this.piFactor !== number.piFactor) {
+            throw new Error('Subtracting of numbers with different pi factors not supported.')
+        }
+
         let ret = new Rational(
             this.numerator * number.denominator - number.numerator * this.denominator,
-            this.denominator * number.denominator);
+            this.denominator * number.denominator,
+            this.piFactor);
 
         ret.simplify();
         return ret;
@@ -103,7 +135,29 @@ class Rational {
 
         let ret = new Rational(
             this.numerator * number.numerator,
-            this.denominator * number.denominator);
+            this.denominator * number.denominator,
+            this.piFactor + number.piFactor);
+
+        ret.simplify();
+        return ret;
+    }
+
+    /**
+     * Divides this Rational by an integer or a Rational. Returns the result,
+     * but does not mutate this object.
+     * 
+     * @param  {Number|Rational} number The number to be divided by
+     * @return {Rational}               The product of the two numbers
+     */
+    divide(number) {
+        if(!(number instanceof Rational)) {
+            number = new Rational(number);
+        }
+
+        let ret = new Rational(
+            this.numerator * number.denominator,
+            this.denominator * number.numerator,
+            this.piFactor - number.piFactor);
 
         ret.simplify();
         return ret;
@@ -121,7 +175,8 @@ class Rational {
         }
 
         return (this.numerator == number.numerator &&
-            this.denominator == number.denominator);
+            this.denominator == number.denominator &&
+            (this.piFactor == number.piFactor || this.numerator == 0));
     }
 
     /**
@@ -200,11 +255,14 @@ class Rational {
      *                                fractions?
      */
     draw(context, position, areFractions=false) {
+        let numLabel = Math.abs(this.numerator).toString();
+        if(this.piFactor === 1) {
+            numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
+        }
+
         if(this.denominator === 1) {
-            var numLabel = this.numerator.toString();
             var width = context.measureText(numLabel).width;
         } else {
-            var numLabel = Math.abs(this.numerator).toString();
             var denomLabel = this.denominator.toString();
 
             var numWidth = context.measureText(numLabel).width;
@@ -251,14 +309,21 @@ class Rational {
             context.moveTo(left - 2, top + FONTSIZE + 3);
             context.lineTo(left + width + 2, top + FONTSIZE + 3);
             context.stroke();
+        }
 
-            if(this.numerator < 0) {
-                context.beginPath();
-                context.lineWidth = 1;
-                context.moveTo(left - 11, top + FONTSIZE + 3);
-                context.lineTo(left - 6, top + FONTSIZE + 3);
-                context.stroke();
+        //draw negative sign
+        let signRight = this.denominator === 1 ? left - 3 : left - 6;
+        if(this.numerator < 0) {
+            context.beginPath();
+            context.lineWidth = 1;
+            if(areFractions) {
+                context.moveTo(signRight - 5, top + FONTSIZE + 3);
+                context.lineTo(signRight, top + FONTSIZE + 3);
+            } else {
+                context.moveTo(signRight - 5, top + FONTSIZE / 2 + 3);
+                context.lineTo(signRight, top + FONTSIZE / 2 + 3);
             }
+            context.stroke();
         }
     }
 }
@@ -306,6 +371,8 @@ class MathPlot extends HTMLElement {
         this.drawXAxis = this.getAttribute('hide-x-axis') !== null ? false : true;
         this.drawYAxis = this.getAttribute('hide-y-axis') !== null ? false : true;
         this.drawGrid = this.getAttribute('show-grid') !== null ? true : false;
+        //indicates that the x axis only should be measured in multiples of pi
+        this.piUnits = this.getAttribute('pi-units') !== null ? true : false;
 
         this.range = {
             x: this._parseRange(this.getAttribute('range-x') || "(-10, 10)"),
@@ -332,13 +399,21 @@ class MathPlot extends HTMLElement {
     _parseRange(range) {
         range = range.replace(/\s/g, '');
 
-        let rangePattern = /^\((-?[0-9]+(?:\.[0-9]+)?),(-?[0-9]+(?:\.[0-9]+)?)\)$/;
+        let rangePattern = /^\((-?[0-9]+(?:\.[0-9]+)?)(pi)?,(-?[0-9]+(?:\.[0-9]+)?)(pi)?\)$/;
         let matches = range.match(rangePattern);
         this._assert(matches !== null, "Invalid range provided.");
 
-        let [min, max] = matches.slice(1).map(parseFloat);
-        this._assert(min < max, "First term of range must be smaller than second.");
+        let min = parseFloat(matches[1]);
+        if(typeof(matches[2]) !== 'undefined') {
+            min *= Math.PI;
+        }
 
+        let max = parseFloat(matches[3]);
+        if(typeof(matches[4]) !== 'undefined') {
+            max *= Math.PI;
+        }
+
+        this._assert(min < max, "First term of range must be smaller than second.");
         return {min: min, max: max};
     }
 
@@ -501,9 +576,20 @@ class MathPlot extends HTMLElement {
             for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
                 if(!(i.equal(0))) {
                     let xPos = this.center.x + i.approx * this.unitSize.x;
-                    //are any of the labels fractions? equivalent to asking if step
-                    //is not an integer
-                    let areFractions = stepSize.approx != parseInt(stepSize.approx);
+
+                    //are any of the labels fractions? if step is an integer,
+                    //or an integral multiple of pi, then no.
+                    if(stepSize.approx === parseInt(stepSize.approx)) {
+                        var areFractions = false;
+                    } else {
+                        let stepSizeDivPi = stepSize.divide(new Rational("pi"));
+
+                        if(stepSizeDivPi.approx === parseInt(stepSizeDivPi.approx)) {
+                            var areFractions = false;
+                        } else {
+                            var areFractions = true;
+                        }
+                    }
 
                     this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
                     if(i.greaterThan(0)) {
@@ -561,25 +647,27 @@ class MathPlot extends HTMLElement {
             throw new Error('axis paramter must be x or y');
         }
 
-        let stepSize = 1;
-        let stepSizePixels = unitSize * stepSize;
+        let baseStepSize =
+            axis === 'x' && this.piUnits ? new Rational("pi") : new Rational(1);
+        let stepSizePixels = unitSize * baseStepSize.approx;
 
-        if(stepSizePixels < MINSTEPSIZE) {
-            while(stepSizePixels < MINSTEPSIZE) {
-                stepSize++;
-                stepSizePixels = unitSize * stepSize;
+        if(stepSizePixels === MINSTEPSIZE) {
+            return baseStepSize;
+        } else if(stepSizePixels < MINSTEPSIZE) {
+            for(var i = 2; stepSizePixels < MINSTEPSIZE; i++) {
+                let stepSize = baseStepSize.times(i);
+                stepSizePixels = unitSize * stepSize.approx;
             }
 
-            return new Rational(stepSize);
+            return baseStepSize.times(i - 1);
         } else {
-            let stepSizeDenominator = 1;
-            while(stepSizePixels > MINSTEPSIZE) {
-                stepSizeDenominator++;
-                stepSize = 1 / stepSizeDenominator;
-                stepSizePixels = unitSize * stepSize;
+            for(var i = 2; stepSizePixels > MINSTEPSIZE; i++) {
+                let stepSize = baseStepSize.divide(i);
+                stepSizePixels = unitSize * stepSize.approx;
             }
 
-            return new Rational(1, stepSizeDenominator - 1);
+            //can't be zero because i will always be incremented at least once
+            return baseStepSize.divide(i - 2);
         }
     }
 
