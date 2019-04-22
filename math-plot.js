@@ -448,6 +448,11 @@ class MathPlot extends HTMLElement {
         this.drawGrid = this.getAttribute('show-grid') !== null ? true : false;
         //indicates that the x axis only should be measured in multiples of pi
         this.piUnits = this.getAttribute('pi-units') !== null ? true : false;
+        //overrides the default unit-marking step sizes
+        this.stepX = this.getAttribute('step-x') ?
+            new Rational(this.getAttribute('step-x')) : null;
+        this.stepY = this.getAttribute('step-y') ?
+            new Rational(this.getAttribute('step-y')) : null;
 
         let rangeXRational =
             Rational.parseRange(this.getAttribute('range-x') || "(-10, 10)");
@@ -584,7 +589,7 @@ class MathPlot extends HTMLElement {
             this.context.lineTo(this.center.x - 5, LABELHEIGHT + 10);
             this.context.fill();
 
-            let stepSize = this._getStepSize('y');
+            let stepSize = this.stepY || this._getStepSize('y');
             let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
             for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
                 if(!(i.equal(0))) {
@@ -621,7 +626,7 @@ class MathPlot extends HTMLElement {
             this.context.lineTo(this.width - LABELWIDTH - 10, this.center.y - 5);
             this.context.fill();
 
-            let stepSize = this._getStepSize('x');
+            let stepSize = this.stepX || this._getStepSize('x');
             let xMin = this.range.x.min
             let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
             for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
