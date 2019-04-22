@@ -453,6 +453,8 @@ class MathPlot extends HTMLElement {
             new Rational(this.getAttribute('step-x')) : null;
         this.stepY = this.getAttribute('step-y') ?
             new Rational(this.getAttribute('step-y')) : null;
+        this.drawXUnits = this.getAttribute('hide-x-units') !== null ? false : true;
+        this.drawYUnits = this.getAttribute('hide-y-units') !== null ? false : true;
 
         let rangeXRational =
             Rational.parseRange(this.getAttribute('range-x') || "(-10, 10)");
@@ -589,18 +591,20 @@ class MathPlot extends HTMLElement {
             this.context.lineTo(this.center.x - 5, LABELHEIGHT + 10);
             this.context.fill();
 
-            let stepSize = this.stepY || this._getStepSize('y');
-            let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
-            for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
-                if(!(i.equal(0))) {
-                    let yPos = this.center.y - i.approx * this.unitSize.y;
+            if(this.drawYUnits) {
+                let stepSize = this.stepY || this._getStepSize('y');
+                let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
+                for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
+                    if(!(i.equal(0))) {
+                        let yPos = this.center.y - i.approx * this.unitSize.y;
 
-                    this._drawLine(this.center.x, yPos, this.center.x + 6, yPos, 2);
-                    i.draw(this.context, {top: yPos, right: this.center.x});
+                        this._drawLine(this.center.x, yPos, this.center.x + 6, yPos, 2);
+                        i.draw(this.context, {top: yPos, right: this.center.x});
 
-                    if(this.drawGrid) {
-                        this._drawLine(0, yPos, this.width - LABELWIDTH, yPos, 1,
-                            [5, 5]);
+                        if(this.drawGrid) {
+                            this._drawLine(0, yPos, this.width - LABELWIDTH, yPos, 1,
+                                [5, 5]);
+                        }
                     }
                 }
             }
@@ -626,37 +630,39 @@ class MathPlot extends HTMLElement {
             this.context.lineTo(this.width - LABELWIDTH - 10, this.center.y - 5);
             this.context.fill();
 
-            let stepSize = this.stepX || this._getStepSize('x');
-            let xMin = this.range.x.min
-            let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
-            for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
-                if(!(i.equal(0))) {
-                    let xPos = this.center.x + i.approx * this.unitSize.x;
+            if(this.drawXUnits) {
+                let stepSize = this.stepX || this._getStepSize('x');
+                let xMin = this.range.x.min
+                let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
+                for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
+                    if(!(i.equal(0))) {
+                        let xPos = this.center.x + i.approx * this.unitSize.x;
 
-                    //are any of the labels fractions? if step is an integer,
-                    //or an integral multiple of pi, then no.
-                    if(stepSize.approx === parseInt(stepSize.approx)) {
-                        var areFractions = false;
-                    } else {
-                        let stepSizeDivPi = stepSize.divide(new Rational("pi"));
-
-                        if(stepSizeDivPi.approx === parseInt(stepSizeDivPi.approx)) {
+                        //are any of the labels fractions? if step is an integer,
+                        //or an integral multiple of pi, then no.
+                        if(stepSize.approx === parseInt(stepSize.approx)) {
                             var areFractions = false;
                         } else {
-                            var areFractions = true;
+                            let stepSizeDivPi = stepSize.divide(new Rational("pi"));
+
+                            if(stepSizeDivPi.approx === parseInt(stepSizeDivPi.approx)) {
+                                var areFractions = false;
+                            } else {
+                                var areFractions = true;
+                            }
                         }
-                    }
 
-                    this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
-                    if(i.greaterThan(0)) {
-                        i.draw(this.context, {top: this.center.y, left: xPos}, areFractions);
-                    } else if(i.lessThan(0)) {
-                        i.draw(this.context, {top: this.center.y, right: xPos}, areFractions);
-                    }
+                        this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
+                        if(i.greaterThan(0)) {
+                            i.draw(this.context, {top: this.center.y, left: xPos}, areFractions);
+                        } else if(i.lessThan(0)) {
+                            i.draw(this.context, {top: this.center.y, right: xPos}, areFractions);
+                        }
 
-                    if(this.drawGrid) {
-                        this._drawLine(xPos, LABELHEIGHT, xPos, this.height, 1,
-                            [5, 5]);
+                        if(this.drawGrid) {
+                            this._drawLine(xPos, LABELHEIGHT, xPos, this.height, 1,
+                                [5, 5]);
+                        }
                     }
                 }
             }
