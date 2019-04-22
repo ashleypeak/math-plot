@@ -886,14 +886,24 @@ class MathPlot extends HTMLElement {
             for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep) {
                 let curY = func(x);
 
-                //if the difference between the y values of two points is
-                //greater than the entire draw region, assume it's a
-                //discontinuity and move to, rather than draw a line to, the
-                //next point.
-                if(Math.abs(curY-prevY) < this.drawRegion.height) {
-                    this.context.lineTo(x, curY);
-                } else {
+                if(Math.abs(curY-prevY) > this.drawRegion.height) {
+                    //if the difference between the y values of two points is
+                    //greater than the entire draw region, assume it's a
+                    //discontinuity and move to, rather than draw a line to,
+                    //the next point.
                     this.context.moveTo(x, curY);
+                } else if(curY >= this.drawRegion.top) {
+                    //if the line is going to be drawn past drawRegion.top,
+                    //clip it
+                    //if the previous one was also past the top, skip entirely
+                    //so you don't get a horizontal line at drawRegion.top
+                    if(prevY < this.drawRegion.top) {
+                        this.context.lineTo(x, this.drawRegion.top);
+                    } else {
+                        this.context.moveTo(x, curY);
+                    }
+                } else {
+                    this.context.lineTo(x, curY);
                 }
 
                 prevY = curY;
