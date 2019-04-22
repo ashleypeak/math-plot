@@ -441,8 +441,8 @@ class MathPlot extends HTMLElement {
      */
     _initDefinedProperties() {
         //initialise graph parameters
-        this.width = this.getAttribute('width') || 200;
-        this.height = this.getAttribute('height') || 200;
+        this.width = this.getAttribute('width') || 300;
+        this.height = this.getAttribute('height') || 300;
         this.drawXAxis = this.getAttribute('hide-x-axis') !== null ? false : true;
         this.drawYAxis = this.getAttribute('hide-y-axis') !== null ? false : true;
         this.drawGrid = this.getAttribute('show-grid') !== null ? true : false;
@@ -610,9 +610,15 @@ class MathPlot extends HTMLElement {
             this.context.fill();
 
             if(this.drawYUnits) {
+                //don't draw unit markings over the 10px arrowhead at the top
+                //of the y axis (or in the same region at the bottom for good
+                //measure).
+                let drawTop = this.drawRegion.top + 10 / this.scale.y;
+                let drawBottom = this.drawRegion.bottom - 10 / this.scale.y;
+
                 let stepSize = this.stepY;
-                let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
-                for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
+                let i = stepSize.times(Math.ceil(drawBottom / stepSize.approx));
+                for(; i.lessThan(drawTop); i = i.plus(stepSize)) {
                     if(!(i.equal(0))) {
                         let yPos = this.center.y - i.approx * this.unitSize.y;
 
@@ -649,10 +655,16 @@ class MathPlot extends HTMLElement {
             this.context.fill();
 
             if(this.drawXUnits) {
+                //don't draw unit markings over the 10px arrowhead at the right
+                //of the x axis (or in the same region at the left for good
+                //measure).
+                let drawLeft = this.drawRegion.left + 10 / this.scale.x;
+                let drawRight = this.drawRegion.right - 10 / this.scale.x;
+
                 let stepSize = this.stepX;
                 let xMin = this.range.x.min
-                let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
-                for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
+                let i = stepSize.times(Math.ceil(drawLeft / stepSize.approx));
+                for(; i.lessThan(drawRight); i = i.plus(stepSize)) {
                     if(!(i.equal(0))) {
                         let xPos = this.center.x + i.approx * this.unitSize.x;
 
