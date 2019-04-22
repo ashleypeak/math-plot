@@ -449,6 +449,7 @@ class MathPlot extends HTMLElement {
         //indicates that the x axis only should be measured in multiples of pi
         this.piUnits = this.getAttribute('pi-units') !== null ? true : false;
         //overrides the default unit-marking step sizes
+        //if not set, will be defined after unitSize in _initDerivedProperties()
         this.stepX = this.getAttribute('step-x') ?
             new Rational(this.getAttribute('step-x')) : null;
         this.stepY = this.getAttribute('step-y') ?
@@ -500,12 +501,15 @@ class MathPlot extends HTMLElement {
      * will draw in the gutters as well, which is after all their point.
      */
     _initDerivedProperties() {
+        let drawLabelWidth = (this.drawXAxis ? LABELWIDTH : 0);
+        let drawLabelHeight = (this.drawYAxis ? LABELHEIGHT : 0);
+
         //the area, in canvas coords, of the main region (that is, the area
         //bounded in graph coords by this.range)
         this.main = {
             left: this.gutter.left,
-            right: this.width - this.gutter.right - (this.drawXAxis ? LABELWIDTH : 0),
-            top: this.gutter.top + (this.drawYAxis ? LABELHEIGHT : 0),
+            right: this.width - this.gutter.right - drawLabelWidth,
+            top: this.gutter.top + drawLabelHeight,
             bottom: this.height - this.gutter.bottom
         }
         this.main.width = this.main.right - this.main.left;
@@ -525,6 +529,10 @@ class MathPlot extends HTMLElement {
             x: this.main.width / this.range.x.size,
             y: this.main.height / this.range.y.size
         }
+
+        //if steps weren't defined, calculate them now
+        this.stepX = this.stepX || this._getStepSize('x');
+        this.stepY = this.stepY || this._getStepSize('y');
 
         //the size, in graph coords, of the drawRegion (see below)
         let drawRangeX = this.range.x.size *
@@ -551,6 +559,14 @@ class MathPlot extends HTMLElement {
             top: this.range.y.max + gutterTop,
             bottom: this.range.y.min - gutterBottom
         }
+        this.drawRegion.width = this.drawRegion.right - this.drawRegion.left;
+        this.drawRegion.height = this.drawRegion.top - this.drawRegion.bottom;
+
+        //one unit of graph units, in canvas coords (pixels)
+        this.scale = {
+            x: (this.width - drawLabelWidth) / this.drawRegion.width,
+            y: -(this.height - drawLabelHeight) / this.drawRegion.height
+        }
     }
 
     /**
@@ -562,6 +578,8 @@ class MathPlot extends HTMLElement {
         for(let child of this.children) {
             let rule = child.getAttribute('rule');
             let func = this.parseMathML(rule);
+
+            this.draw(func);
         }
     }
 
@@ -592,7 +610,7 @@ class MathPlot extends HTMLElement {
             this.context.fill();
 
             if(this.drawYUnits) {
-                let stepSize = this.stepY || this._getStepSize('y');
+                let stepSize = this.stepY;
                 let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
                 for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
                     if(!(i.equal(0))) {
@@ -631,7 +649,7 @@ class MathPlot extends HTMLElement {
             this.context.fill();
 
             if(this.drawXUnits) {
-                let stepSize = this.stepX || this._getStepSize('x');
+                let stepSize = this.stepX;
                 let xMin = this.range.x.min
                 let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
                 for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
@@ -814,6 +832,33 @@ class MathPlot extends HTMLElement {
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }
+    }
+
+    /**
+     * Given a (JavaScript) function `func`, which will convert an x coordinate
+     * into the appropriate y coordinate for a (mathematical) function, plot
+     * the curve of said mathematical function.
+     * 
+     * @param  {Function} func A JS function describing the curve to be plotted
+     */
+    draw(func) {
+        //the distance in graph coords equal to a pixel, inverse of scale.x
+        let drawStep = 1 / this.scale.x;
+
+        this.context.save();
+            this.context.translate(this.center.x, this.center.y);       //move (0,0) to graph centre
+            this.context.scale(this.scale.x, this.scale.y);            //change scale from pixels to graph units, and invert y axis
+            
+            this.context.beginPath();
+            this.context.moveTo(this.drawRegion.left, func(this.drawRegion.left));
+            
+            for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep)
+                this.context.lineTo(x, func(x));
+        this.context.restore();
+        
+        this.context.lineJoin = "round";
+        this.context.lineWidth = 2;
+        this.context.stroke();
     }
 }
 
