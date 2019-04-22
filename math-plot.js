@@ -466,10 +466,10 @@ class MathPlot extends HTMLElement {
         this.range.y.size = this.range.y.max - this.range.y.min;
 
         this.gutter = {
-            left: this.getAttribute('gutterLeft') || 20,
-            right: this.getAttribute('gutterRight') || 20,
-            top: this.getAttribute('gutterTop') || 20,
-            bottom: this.getAttribute('gutterBottom') || 20
+            left: parseInt(this.getAttribute('gutter-left')) || 20,
+            right: parseInt(this.getAttribute('gutter-right')) || 20,
+            top: parseInt(this.getAttribute('gutter-top')) || 20,
+            bottom: parseInt(this.getAttribute('gutter-bottom')) || 20
         }
     }
 
@@ -533,8 +533,8 @@ class MathPlot extends HTMLElement {
                 this.main.height);
 
         //the size of each axis' gutters in graph coords
-        let gutterRangeX = (drawRangeX - this.range.x.size) / 2;
-        let gutterRangeY = (drawRangeY - this.range.y.size) / 2;
+        let gutterRangeX = (drawRangeX - this.range.x.size);
+        let gutterRangeY = (drawRangeY - this.range.y.size);
 
         //the size of each gutter in graph coords
         let gutterLeft = gutterRangeX * (this.gutter.left / (this.gutter.left + this.gutter.right));
