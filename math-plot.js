@@ -802,6 +802,8 @@ class MathPlot extends HTMLElement {
                 assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
 
                 return (x => parseFloat(node.textContent));
+            case 'degree':
+                return this._parseMathMLNode(node.firstChild);
             default:
                 throw new Error('Unknown MathML element: ' + node.tagName);
         }
@@ -824,14 +826,39 @@ class MathPlot extends HTMLElement {
         let args = argNodes.map(this._parseMathMLNode, this);
 
         switch(action) {
+            case 'plus':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) + args[1](x));
+            case 'minus':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) - args[1](x));
+            case 'times':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) * args[1](x));
+            case 'divide':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) / args[1](x));
             case 'power':
-                assert(node.childElementCount === 3, "<apply><times/> must have three children.")
-                let [base, exp] = args;
-
-                return ((x) => base(x)**exp(x));
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) ** args[1](x));
+            case 'root':
+                this._assertChildren(node, 3);
+                return ((x) => args[1](x) ** (1 / args[0](x)));
+            case 'sin':
+                this._assertChildren(node, 2);
+                return ((x) => Math.sin(args[0](x)));
+            case 'cos':
+                this._assertChildren(node, 2);
+                return ((x) => Math.cos(args[0](x)));
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }
+    }
+
+    _assertChildren(node, count) {
+        let action = node.firstChild,tagName;
+        assert(node.childElementCount === count,
+            '<apply><' + action + '/> must have three children.')
     }
 
     /**
