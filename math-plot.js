@@ -850,6 +850,9 @@ class MathPlot extends HTMLElement {
             case 'cos':
                 this._assertChildren(node, 2);
                 return ((x) => Math.cos(args[0](x)));
+            case 'tan':
+                this._assertChildren(node, 2);
+                return ((x) => Math.tan(args[0](x)));
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }
@@ -879,8 +882,22 @@ class MathPlot extends HTMLElement {
             this.context.beginPath();
             this.context.moveTo(this.drawRegion.left, func(this.drawRegion.left));
             
-            for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep)
-                this.context.lineTo(x, func(x));
+            let prevY = func(this.drawRegion.left);
+            for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep) {
+                let curY = func(x);
+
+                //if the difference between the y values of two points is
+                //greater than the entire draw region, assume it's a
+                //discontinuity and move to, rather than draw a line to, the
+                //next point.
+                if(Math.abs(curY-prevY) < this.drawRegion.height) {
+                    this.context.lineTo(x, curY);
+                } else {
+                    this.context.moveTo(x, curY);
+                }
+
+                prevY = curY;
+            }
         this.context.restore();
         
         this.context.lineJoin = "round";
