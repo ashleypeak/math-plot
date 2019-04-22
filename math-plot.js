@@ -330,15 +330,15 @@ class Rational {
 
         //we need left and top to draw
         if(position.hasOwnProperty('left')) {
-            var left = position.left + 4;
+            var left = position.left + 5;
         } else if(position.hasOwnProperty('right')) {
-            var left = position.right - width - 4;
+            var left = position.right - width - 5;
         } else {
             throw new Error('Position must have either left or right defined.');
         }
 
         if(position.hasOwnProperty('top')) {
-            var top = position.top;
+            var top = !areFractions ? position.top : position.top - 3;
         } else {
             throw new Error('Position must have top defined.');
         }
@@ -432,7 +432,7 @@ class MathPlot extends HTMLElement {
         this.canvas.setAttribute('height', this.height);
 
         //initialise context
-        this.context.font = 'italic ' + FONTSIZE + 'px serif';
+        this.context.font = FONTSIZE + 'px serif';
     }
 
     /**
