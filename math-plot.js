@@ -515,7 +515,7 @@ class MathPlot extends HTMLElement {
         //the center of the graph in canvas coords
         this.center = {
             x: this.main.left + relativeCentreX * this.main.width,
-            y: this.main.top + relativeCentreY * this.main.height
+            y: this.main.bottom - relativeCentreY * this.main.height
         }
 
         //the size in pixels of a step of 1 in either axis
