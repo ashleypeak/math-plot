@@ -8,6 +8,20 @@ TEMPLATE.innerHTML = `
     <canvas id='canvas' class='canvas'></canvas>
 `;
 
+/**
+ * Assert that `condition` is true. If it is not, raise an error with
+ * message `message`.
+ * 
+ * @param  {Boolean} condition The condition being asserted
+ * @param  {String} message    The error string to be raised if condition
+ *                             is false
+ */
+function assert(condition, message) {
+    if(!condition) {
+        throw new Error(message);
+    }
+}
+
 
 /**
  * A class for manipulating rational numbers. Stored as a pair of integers
@@ -18,6 +32,15 @@ class Rational {
      * Creates a new Rational, a rational number. Numerator and denominator
      * must both be integers, though denominator is optional.
      *
+     * Rationals can be created with a number of syntaxes:
+     *     new Rational(1, 2)       // => 1/2
+     *     new Rational("1", "2")   // => 1/2
+     *     new Rational(1, 2, 1)    // => pi/2
+     *     new Rational("pi", 2)    // => pi/2
+     *     new Rational("pi/2")     // => pi/2
+     * pi is also strictly supported in the denominator, but that can't be used
+     * for anything useful at the moment.
+     *
      * piFactor allows the Rational to be multiplied by some power of pi.
      * Necessary because axes sometimes need to be multiples of pi. It's poorly
      * supported and probably a bit overengineered, but I preferred a genuine
@@ -25,36 +48,70 @@ class Rational {
      * units.
      * 
      * @constructs
-     * @param  {Number} numerator   The numerator of the rational
-     * @param  {Number} denominator The denominator of the rational
-     * @param  {Number} piFactor    Rational multiplied by pi^piFactor
-     * @return {Rational}             A new Rational object
+     * @param  {Number|String} numerator   The numerator of the rational
+     * @param  {Number|String} denominator The denominator of the rational
+     * @param  {Number} piFactor           Rational multiplied by pi^piFactor
+     * @return {Rational}                  A new Rational object
      */
     constructor(numerator, denominator=1, piFactor=0) {
-        //if piFactor != 0, Rational is multiplied by pi^{piFactor}
+        //must go first because numerator/denominator can alter it
         this.piFactor = piFactor;
 
-        if(typeof numerator === 'number' && numerator === parseInt(numerator)) {
-            this.numerator = numerator;
-        } else if(typeof numerator === 'string' && /^[0-9]*pi$/.test(numerator)) {
-            let matches = numerator.match(/^([0-9]*)pi$/);
-            this.numerator = matches[1] == "" ? 1 : parseInt(matches[1]);
-            this.piFactor += 1;
+        //e.g. new Rational("1/2")
+        if(typeof numerator === 'string') {
+            let matches = numerator.match(/^(.+)\/(.+)$/);
+            if(matches !== null) {
+                [numerator, denominator] = matches.slice(1);
+            }
+        }
+
+        let num = this._parseInput(numerator);
+        this.numerator = num.mult;
+        this.piFactor += num.pi;
+
+        let denom = this._parseInput(denominator);
+        this.denominator = denom.mult;
+        this.piFactor -= denom.pi;
+
+        this.simplify();
+    }
+
+    /**
+     * Given a number in one of the formats described below, return an Object
+     * of the form {mult:..., pi:...}, where `mult` is an INT, the non-pi
+     * value of the number, and `pi` is an INT, the multiplicity of pi (always
+     * 1 or 0).
+     *
+     * Formats:
+     *     int:    e.g. 1
+     *     string: e.g. "1" | "1.3" | "-pi" | "-2pi"
+     * 
+     * 
+     * @param  {Number|String} number The number to be processed
+     * @return {Object}               The parsed number, described above
+     */
+    _parseInput(number) {
+        if(typeof number === 'number') {
+            assert(number === parseInt(number), 'Invalid number.');
+
+            return {mult: number, pi: 0};
+        } else if(typeof number === 'string') {
+            assert(number !== '', 'Invalid number.')
+            let pattern = /^(-)?([0-9]+)?(pi)?$/
+            let matches = number.match(pattern);
+
+            let [neg, multStr, piStr] = matches.slice(1);
+            let mult = typeof multStr !== 'undefined' ? parseInt(multStr) : 1;
+            let pi = typeof piStr !== 'undefined' ? 1 : 0;
+
+            if(typeof neg !== 'undefined') {
+                mult *= -1;
+            }
+
+            return {mult: mult, pi: pi};
         } else {
             throw new Error("Invalid numerator.");
         }
-
-        if(typeof denominator === 'number' && denominator === parseInt(denominator)) {
-            this.denominator = denominator;
-        } else if(typeof denominator === 'string' && /^[0-9]*pi$/.test(denominator)) {
-            let matches = denominator.match(/^([0-9]*)pi$/);
-            this.denominator = matches[1] == "" ? 1 : parseInt(matches[1]);
-            this.piFactor -= 1;
-        } else {
-            throw new Error("Invalid denominator.");
-        }
-
-        this.simplify();
     }
 
 
@@ -234,7 +291,7 @@ class Rational {
      * @return {Number}   The GCD of `a` and `b`
      */
     _gcd(a, b) {
-        if(b == 0) {
+        if(!b) {
             return a;
         }
 
@@ -326,6 +383,24 @@ class Rational {
             context.stroke();
         }
     }
+
+    /**
+     * Given a range of the form "(min, max)", return an object of the form
+     * {min: Rational, max: Rational}
+     * 
+     * @param  {String} range A string representation of the range
+     * @return {Object}       The parsed range
+     */
+    static parseRange(range) {
+        range = range.replace(/\s/g, '');
+        let matches = range.match(/^\((.+),(.+)\)$/);
+        assert(matches !== null, "Invalid range provided.");
+
+        let [min, max] = matches.slice(1).map(el => new Rational(el));
+
+        assert(min.lessThan(max), "First term of range must be smaller than second.");
+        return {min: min, max: max};
+    }
 }
 
 
@@ -374,9 +449,13 @@ class MathPlot extends HTMLElement {
         //indicates that the x axis only should be measured in multiples of pi
         this.piUnits = this.getAttribute('pi-units') !== null ? true : false;
 
+        let rangeXRational =
+            Rational.parseRange(this.getAttribute('range-x') || "(-10, 10)");
+        let rangeYRational =
+            Rational.parseRange(this.getAttribute('range-y') || "(-10, 10)");
         this.range = {
-            x: this._parseRange(this.getAttribute('range-x') || "(-10, 10)"),
-            y: this._parseRange(this.getAttribute('range-y') || "(-10, 10)")
+            x: {min: rangeXRational.min.approx, max: rangeXRational.max.approx},
+            y: {min: rangeYRational.min.approx, max: rangeYRational.max.approx},
         }
         this.range.x.size = this.range.x.max - this.range.x.min;
         this.range.y.size = this.range.y.max - this.range.y.min;
@@ -387,34 +466,6 @@ class MathPlot extends HTMLElement {
             top: this.getAttribute('gutterTop') || 20,
             bottom: this.getAttribute('gutterBottom') || 20
         }
-    }
-
-    /**
-     * Given a range of the form "(min, max)", return an object of the form
-     * {min: FLOAT, max: FLOAT}
-     * 
-     * @param  {String} range A string representation of the range
-     * @return {Object}       The parsed range
-     */
-    _parseRange(range) {
-        range = range.replace(/\s/g, '');
-
-        let rangePattern = /^\((-?[0-9]+(?:\.[0-9]+)?)(pi)?,(-?[0-9]+(?:\.[0-9]+)?)(pi)?\)$/;
-        let matches = range.match(rangePattern);
-        this._assert(matches !== null, "Invalid range provided.");
-
-        let min = parseFloat(matches[1]);
-        if(typeof(matches[2]) !== 'undefined') {
-            min *= Math.PI;
-        }
-
-        let max = parseFloat(matches[3]);
-        if(typeof(matches[4]) !== 'undefined') {
-            max *= Math.PI;
-        }
-
-        this._assert(min < max, "First term of range must be smaller than second.");
-        return {min: min, max: max};
     }
 
     /**
@@ -513,8 +564,8 @@ class MathPlot extends HTMLElement {
      */
     drawAxes() {
         if(this.drawYAxis) {
-            this._assert(this.range.x.min <= 0 && this.range.y.max >= 0,
-                'Cannot draw the y axis is it is out of range.')
+            assert(this.range.x.min <= 0 && this.range.y.max >= 0,
+                'Cannot draw the y axis as it is out of range.')
 
             let labelWidth = this.context.measureText('y').width;
 
@@ -551,8 +602,8 @@ class MathPlot extends HTMLElement {
         }
 
         if(this.drawXAxis) {
-            this._assert(this.range.y.min <= 0 && this.range.y.max >= 0,
-                'Cannot draw the x axis is it is out of range.')
+            assert(this.range.y.min <= 0 && this.range.y.max >= 0,
+                'Cannot draw the x axis as it is out of range.')
 
             let labelWidth = this.context.measureText('x').width;
 
@@ -715,11 +766,11 @@ class MathPlot extends HTMLElement {
             case 'apply':
                 return this._parseMathMLApply(node);
             case 'ci':
-                this._assert(node.textContent === 'x', '<ci> can only take \'x\' in <' + TAGNAME + '>.')
+                assert(node.textContent === 'x', '<ci> can only take \'x\' in <' + TAGNAME + '>.')
 
                 return (x => x);
             case 'cn':
-                this._assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
+                assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
 
                 return (x => parseFloat(node.textContent));
             default:
@@ -737,7 +788,7 @@ class MathPlot extends HTMLElement {
      *                         `node`
      */
     _parseMathMLApply(node) {
-        this._assert(node.childElementCount >= 2, "<apply> must have at least two children.")
+        assert(node.childElementCount >= 2, "<apply> must have at least two children.")
 
         let action = node.firstChild.tagName;
         let argNodes = Array.from(node.children).slice(1);
@@ -745,26 +796,12 @@ class MathPlot extends HTMLElement {
 
         switch(action) {
             case 'power':
-                this._assert(node.childElementCount === 3, "<apply><times/> must have three children.")
+                assert(node.childElementCount === 3, "<apply><times/> must have three children.")
                 let [base, exp] = args;
 
                 return ((x) => base(x)**exp(x));
             default:
                 throw new Error('Unknown <apply> action: ' + action);
-        }
-    }
-
-    /**
-     * Assert that `condition` is true. If it is not, raise an error with
-     * message `message`.
-     * 
-     * @param  {Boolean} condition The condition being asserted
-     * @param  {String} message    The error string to be raised if condition
-     *                             is false
-     */
-    _assert(condition, message) {
-        if(!condition) {
-            throw new Error(message);
         }
     }
 }
