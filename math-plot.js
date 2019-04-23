@@ -600,6 +600,9 @@ class MathPlot extends HTMLElement {
                 case 'line':
                     this._plotLineElement(child);
                     break;
+                case 'line-segment':
+                    this._plotLineSegmentElement(child);
+                    break;
             }
         }
     }
@@ -645,6 +648,26 @@ class MathPlot extends HTMLElement {
             let func = (x => m * (x - pointA[0]) + pointA[1]);
             this.plotFunction(func, params);
         }
+    }
+
+    /**
+     * Given a <math-plot-line-segment> element, plot the line segment
+     * described.
+     * 
+     * @param  {HTMLElement} el The <math-plot-line-segment> element
+     */
+    _plotLineSegmentElement(el) {
+        let pointA = Rational.parseTuple(el.getAttribute('point-a'));
+        let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+        let params = this._getParams(el);
+
+        pointA = pointA.map(num => num.approx);
+        pointB = pointB.map(num => num.approx);
+
+        assert(pointA.length === 2 && pointB.length === 2,
+            '<plot-line-segment> Invalid points provided.');
+
+        this.plotLineSegment(pointA, pointB, params);
     }
 
     /**
@@ -979,7 +1002,8 @@ class MathPlot extends HTMLElement {
      * into the appropriate y coordinate for a (mathematical) function, plot
      * the curve of said mathematical function.
      * 
-     * @param  {Function} func A JS function describing the curve to be plotted
+     * @param  {Function} func   A JS function describing the curve to be plotted
+     * @param  {Object}   params Line parameters, @see _renderLine
      */
     plotFunction(func, params) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
@@ -1031,7 +1055,8 @@ class MathPlot extends HTMLElement {
      * Given an x intercept `x`, plot a vertical line running from top to
      * bottom of the graph.
      * 
-     * @param  {Number} x The x intercept of the line
+     * @param  {Number} x      The x intercept of the line
+     * @param  {Object} params Line parameters, @see _renderLine
      */
     plotVerticalLine(x, params) {
         this.context.save();
@@ -1041,6 +1066,27 @@ class MathPlot extends HTMLElement {
             this.context.beginPath();
             this.context.moveTo(x, this.drawRegion.bottom);
             this.context.lineTo(x, this.drawRegion.top);
+        this.context.restore();
+        
+        this._renderLine(params);
+    }
+
+    /**
+     * Given two points (each an array of two numbers [x, y]) plot a line
+     * segment between them.
+     * 
+     * @param  {Array}  pointA One end of the line segment
+     * @param  {Array}  pointB The other end of the line segment
+     * @param  {Object} params Line parameters, @see _renderLine
+     */
+    plotLineSegment(pointA, pointB, params) {
+        this.context.save();
+            this.context.translate(this.center.x, this.center.y);
+            this.context.scale(this.scale.x, this.scale.y);
+            
+            this.context.beginPath();
+            this.context.moveTo(pointA[0], pointA[1]);
+            this.context.lineTo(pointB[0], pointB[1]);
         this.context.restore();
         
         this._renderLine(params);
@@ -1098,6 +1144,21 @@ class MathPlotLine extends HTMLElement {
 }
 
 
+/**
+ * Defines a line segment to be plotted on the MathPlot canvas.
+ * @see  MathPlotFunction
+ */
+class MathPlotLineSegment extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
 customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
 customElements.define(TAGNAME + '-line', MathPlotLine);
+customElements.define(TAGNAME + '-line-segment', MathPlotLineSegment);

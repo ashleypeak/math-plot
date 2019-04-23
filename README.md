@@ -120,3 +120,14 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` el
 | point-b   | Rational pair*       | *Required* | A point that the line will run through. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
+
+#### Plotting line segments: `<math-plot-line-segment>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgment>` element will accept two arguments `point-a` and `point-b`, and will plot a line segment between the two.
+
+| Attribute | Value                | Default    | Description                  |
+| --------- | -------------------- | ---------- | ---------------------------- |
+| point-a   | Rational pair*       | *Required* | One end of the line segment. |
+| point-b   | Rational pair*       | *Required* | One end of the line segment. |
+| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
