@@ -386,21 +386,17 @@ class Rational {
     }
 
     /**
-     * Given a range of the form "(min, max)", return an object of the form
-     * {min: Rational, max: Rational}
+     * Given a tuple of the form "(a, b, ...)", return an array of Rationals
      * 
-     * @param  {String} range A string representation of the range
-     * @return {Object}       The parsed range
+     * @param  {String} tuple A string representation of the tuple of rationals
+     * @return {Array}        The parsed tuple
      */
-    static parseRange(range) {
-        range = range.replace(/\s/g, '');
-        let matches = range.match(/^\((.+),(.+)\)$/);
-        assert(matches !== null, "Invalid range provided.");
+    static parseTuple(tuple) {
+        tuple = tuple.replace(/\s/g, '');
+        assert(/^\([^(),]+(,[^(),]+)*\)$/.test(tuple), "Invalid tuple provided.");
 
-        let [min, max] = matches.slice(1).map(el => new Rational(el));
-
-        assert(min.lessThan(max), "First term of range must be smaller than second.");
-        return {min: min, max: max};
+        let matches = tuple.slice(1, -1).split(',');
+        return matches.map(el => new Rational(el));
     }
 }
 
@@ -459,12 +455,24 @@ class MathPlot extends HTMLElement {
         this.drawYUnits = this.getAttribute('hide-y-units') !== null ? false : true;
 
         let rangeXRational =
-            Rational.parseRange(this.getAttribute('range-x') || "(-10, 10)");
+            Rational
+                .parseTuple(this.getAttribute('range-x') || "(-10, 10)")
+                .map(el => el.approx);
         let rangeYRational =
-            Rational.parseRange(this.getAttribute('range-y') || "(-10, 10)");
+            Rational
+                .parseTuple(this.getAttribute('range-y') || "(-10, 10)")
+                .map(el => el.approx);
+
+        assert(
+            rangeXRational.length == 2 && rangeXRational[0] < rangeXRational[1],
+            "Invalid range-x provided.")
+        assert(
+            rangeYRational.length == 2 && rangeYRational[0] < rangeYRational[1],
+            "Invalid range-y provided.")
+
         this.range = {
-            x: {min: rangeXRational.min.approx, max: rangeXRational.max.approx},
-            y: {min: rangeYRational.min.approx, max: rangeYRational.max.approx},
+            x: {min: rangeXRational[0], max: rangeXRational[1]},
+            y: {min: rangeYRational[0], max: rangeYRational[1]},
         }
         this.range.x.size = this.range.x.max - this.range.x.min;
         this.range.y.size = this.range.y.max - this.range.y.min;
@@ -577,10 +585,48 @@ class MathPlot extends HTMLElement {
         this.drawAxes();
 
         for(let child of this.children) {
-            let rule = child.getAttribute('rule');
-            let func = this.parseMathML(rule);
+            let tag = child.tagName.toLowerCase();
+            tag = tag.substring('math-plot-'.length);
 
-            this.draw(func);
+            switch(tag) {
+                case 'function':
+                    this._plotFunctionElement(child);
+                    break;
+                case 'line':
+                    this._plotLineElement(child);
+                    break;
+            }
+        }
+    }
+
+    _plotFunctionElement(el) {
+        let rule = el.getAttribute('rule');
+        let func = this.parseMathML(rule);
+
+        this.plotFunction(func);
+    }
+
+    _plotLineElement(el) {
+        let pointA = Rational.parseTuple(el.getAttribute('point-a'));
+        let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+
+        pointA = pointA.map(num => num.approx);
+        pointB = pointB.map(num => num.approx);
+
+        assert(pointA.length === 2 && pointB.length === 2,
+            '<plot-line> Invalid points provided.');
+
+        let rise = pointB[1] - pointA[1];
+        let run = pointB[0] - pointA[0];
+
+        if(run === 0) {
+            assert(rise !== 0,
+                '<plot-line> The two line points cannot be the same.');
+            this.plotVerticalLine(pointA[0]);
+        } else {
+            let m = rise / run;
+            let func = (x => m * (x - pointA[0]) + pointA[1]);
+            this.plotFunction(func);
         }
     }
 
@@ -886,16 +932,20 @@ class MathPlot extends HTMLElement {
      * 
      * @param  {Function} func A JS function describing the curve to be plotted
      */
-    draw(func) {
+    plotFunction(func) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
         let drawStep = 1 / this.scale.x;
 
         this.context.save();
-            this.context.translate(this.center.x, this.center.y);       //move (0,0) to graph centre
-            this.context.scale(this.scale.x, this.scale.y);            //change scale from pixels to graph units, and invert y axis
+            //move (0,0) to graph centre;
+            this.context.translate(this.center.x, this.center.y)
+            //change scale from pixels to graph units, and invert y axis
+            this.context.scale(this.scale.x, this.scale.y);
             
             this.context.beginPath();
-            this.context.moveTo(this.drawRegion.left, func(this.drawRegion.left));
+            this.context.moveTo(
+                this.drawRegion.left,
+                func(this.drawRegion.left));
             
             let prevY = func(this.drawRegion.left);
             for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep) {
@@ -926,6 +976,26 @@ class MathPlot extends HTMLElement {
         this.context.restore();
         
         this.context.lineJoin = "round";
+        this.context.lineWidth = 2;
+        this.context.stroke();
+    }
+
+    /**
+     * Given an x intercept `x`, plot a vertical line running from top to
+     * bottom of the graph.
+     * 
+     * @param  {Number} x The x intercept of the line
+     */
+    plotVerticalLine(x) {
+        this.context.save();
+            this.context.translate(this.center.x, this.center.y);
+            this.context.scale(this.scale.x, this.scale.y);
+            
+            this.context.beginPath();
+            this.context.moveTo(x, this.drawRegion.bottom);
+            this.context.lineTo(x, this.drawRegion.top);
+        this.context.restore();
+        
         this.context.lineWidth = 2;
         this.context.stroke();
     }

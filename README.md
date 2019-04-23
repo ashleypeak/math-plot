@@ -107,3 +107,12 @@ The following `<apply>` functions are implemented:
 | `<sin>` | |
 | `<cos>` | |
 | `<tan>` | |
+
+#### Plotting lines: `<math-plot-line>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` element will accept two arguments `point-a` and `point-b`, and will plot the line running through both.
+
+| Attribute | Value          | Default    | Description                             |
+| --------- | -------------- | ---------- | --------------------------------------- |
+| point-a   | Rational pair* | *Required* | A point that the line will run through. |
+| point-b   | Rational pair* | *Required* | A point that the line will run through. |
