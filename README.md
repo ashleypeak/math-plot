@@ -131,3 +131,6 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 | point-b   | Rational pair*       | *Required* | One end of the line segment. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
+| label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
+
+**Note:** The logic for positioning the label is not sophisticated. If unsatisfactory, use the `<math-plot-text>` element instead.

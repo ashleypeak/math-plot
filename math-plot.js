@@ -5,7 +5,7 @@ const FONTSIZE = 17;
 const MINSTEPSIZE = 40;
 const DEFAULT_PLOT_PARAMETERS = {
     lineWidth: 2,
-    strokeStyle: '#000000',
+    color: '#000000',
     lineDash: []
 };
 const TEMPLATE = document.createElement('template');
@@ -617,7 +617,7 @@ class MathPlot extends HTMLElement {
         let func = this.parseMathML(rule);
         let params = this._getParams(el);
 
-        this.plotFunction(func, params);
+        this.plotFunction(params, func);
     }
 
     /**
@@ -641,12 +641,12 @@ class MathPlot extends HTMLElement {
 
         if(run === 0) {
             assert(rise !== 0,
-                '<plot-line> The two line points cannot be the same.');
-            this.plotVerticalLine(pointA[0], params);
+                '<plot-line> The two points cannot be the same.');
+            this.plotVerticalLine(params, pointA[0]);
         } else {
             let m = rise / run;
             let func = (x => m * (x - pointA[0]) + pointA[1]);
-            this.plotFunction(func, params);
+            this.plotFunction(params, func);
         }
     }
 
@@ -659,6 +659,7 @@ class MathPlot extends HTMLElement {
     _plotLineSegmentElement(el) {
         let pointA = Rational.parseTuple(el.getAttribute('point-a'));
         let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+        let label = el.getAttribute('label');
         let params = this._getParams(el);
 
         pointA = pointA.map(num => num.approx);
@@ -667,7 +668,10 @@ class MathPlot extends HTMLElement {
         assert(pointA.length === 2 && pointB.length === 2,
             '<plot-line-segment> Invalid points provided.');
 
-        this.plotLineSegment(pointA, pointB, params);
+        assert(pointA[0] !== pointB[0] || pointA[1] !== pointB[1],
+            '<plot-line-segment> The two points cannot be the same.');
+
+        this.plotLineSegment(params, pointA, pointB, label);
     }
 
     /**
@@ -684,7 +688,7 @@ class MathPlot extends HTMLElement {
 
         let color = el.getAttribute('color');
         if(color !== null) {
-            params.strokeStyle = color;
+            params.color = color;
         }
 
         let dashed = el.getAttribute('dashed');
@@ -1002,10 +1006,10 @@ class MathPlot extends HTMLElement {
      * into the appropriate y coordinate for a (mathematical) function, plot
      * the curve of said mathematical function.
      * 
-     * @param  {Function} func   A JS function describing the curve to be plotted
      * @param  {Object}   params Line parameters, @see _renderLine
+     * @param  {Function} func   A JS function describing the curve to be plotted
      */
-    plotFunction(func, params) {
+    plotFunction(params, func) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
         let drawStep = 1 / this.scale.x;
 
@@ -1055,10 +1059,10 @@ class MathPlot extends HTMLElement {
      * Given an x intercept `x`, plot a vertical line running from top to
      * bottom of the graph.
      * 
-     * @param  {Number} x      The x intercept of the line
      * @param  {Object} params Line parameters, @see _renderLine
+     * @param  {Number} x      The x intercept of the line
      */
-    plotVerticalLine(x, params) {
+    plotVerticalLine(params, x) {
         this.context.save();
             this.context.translate(this.center.x, this.center.y);
             this.context.scale(this.scale.x, this.scale.y);
@@ -1074,12 +1078,16 @@ class MathPlot extends HTMLElement {
     /**
      * Given two points (each an array of two numbers [x, y]) plot a line
      * segment between them.
+     * If `label` !== null, write the label as well. Note that the logic
+     * for label positioning isn't sophisticated, <math-plot-text> is a better
+     * option for more control.
      * 
+     * @param  {Object} params Line parameters, @see _renderLine
      * @param  {Array}  pointA One end of the line segment
      * @param  {Array}  pointB The other end of the line segment
-     * @param  {Object} params Line parameters, @see _renderLine
+     * @param  {String} label  (Optional) A text label for the line segment
      */
-    plotLineSegment(pointA, pointB, params) {
+    plotLineSegment(params, pointA, pointB, label) {
         this.context.save();
             this.context.translate(this.center.x, this.center.y);
             this.context.scale(this.scale.x, this.scale.y);
@@ -1090,6 +1098,33 @@ class MathPlot extends HTMLElement {
         this.context.restore();
         
         this._renderLine(params);
+
+        if(label !== null) {
+            let midPoint = [
+                (pointA[0] + pointB[0]) / 2,
+                (pointA[1] + pointB[1]) / 2
+            ];
+
+            let rise = pointB[1] - pointA[1];
+            let run = pointB[0] - pointA[0];
+
+            //make a best guess for where the label should go based on the
+            //slope of the line segment
+            let pos = null;
+            if(run === 0 || (rise / run) > 10) {
+                pos = {left: midPoint[0], centerY: midPoint[1]};
+            } else if(rise / run > 1) {
+                pos = {left: midPoint[0], top: midPoint[1]};
+            } else if(rise / run > 0.1) {
+                pos = {right: midPoint[0], bottom: midPoint[1]};
+            } else if(rise / run > -0.1) {
+                pos = {centerX: midPoint[0], bottom: midPoint[1]};
+            } else {
+                pos = {left: midPoint[0], bottom: midPoint[1]};
+            }
+
+            this._renderText(params, label, pos);
+        }
     }
 
     /**
@@ -1097,17 +1132,68 @@ class MathPlot extends HTMLElement {
      * either their defauls (defined in DEFAULT_PLOT_PARAMETERS) or their
      * overrides in `parms`, then draws a line.
      *
-     * @see  _getParams
-     * @param  {Object} parms The overriden parameters
+     * @param  {Object} parms The overriden parameters, @see _getParams
      */
     _renderLine(parms) {
         let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
 
         this.context.lineJoin = "round";
         this.context.lineWidth = params.lineWidth;
-        this.context.strokeStyle = params.strokeStyle;
+        this.context.strokeStyle = params.color;
         this.context.setLineDash(params.lineDash);
         this.context.stroke();
+    }
+
+    /**
+     * Render the text in `text` at the position described in `pos`.
+     * 
+     * `pos` is an Object with six different possible properties: bottom,
+     * centerY, top, left, centerX, right; but is only required to have (and
+     * will only make use of) one of each of the vertical/horizontal
+     * properties.
+     * 
+     * @param  {Object} parms The overriden parameters, @see _getParams
+     * @param  {String} text  The text to be rendered
+     * @param  {Object} pos   The position at which the text is to be rendered
+     */
+    _renderText(parms, text, pos) {
+        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
+
+        let width = this.context.measureText(text).width;
+        let scaledWidth = width / this.scale.x;
+        let scaledFontSize = FONTSIZE / this.scale.y;
+
+        //padding from left and bottom, since they otherwise sit too close to
+        //the line segments
+        let scaledLeftPad = 3 / this.scale.x;
+        let scaledBottomPad = 3 / this.scale.y;
+
+        let bottom = null;
+        if(pos.hasOwnProperty('top')) {
+            bottom = pos.top + scaledFontSize;
+        } else if(pos.hasOwnProperty('centerY')) {
+            bottom = pos.centerY + scaledFontSize / 2;
+        } else if(pos.hasOwnProperty('bottom')) {
+            bottom = pos.bottom - scaledBottomPad;
+        } else {
+            throw new Error('_renderText: pos requires a vertical position.')
+        }
+
+        let left = null;
+        if(pos.hasOwnProperty('left')) {
+            left = pos.left + scaledLeftPad;
+        } else if(pos.hasOwnProperty('centerX')) {
+            left = pos.centerX - scaledWidth / 2;
+        } else if(pos.hasOwnProperty('right')) {
+            left = pos.right - scaledWidth;
+        } else {
+            throw new Error('_renderText: pos requires a horizontal position.')
+        }
+
+        let x = left * this.scale.x + this.center.x;
+        let y = bottom * this.scale.y + this.center.y;
+        this.context.fillStyle = params.color;
+        this.context.fillText(text, x, y);
     }
 }
 
