@@ -420,7 +420,7 @@ class MathPlot extends HTMLElement {
 
         this.attachShadow({mode: 'open'});
         this.shadowRoot.appendChild(TEMPLATE.content.cloneNode(true));
-        this.canvas = this.shadowRoot.getElementsByTagName('canvas')[0];
+        this.canvas = this.shadowRoot.getElementById('canvas');
         this.context = this.canvas.getContext('2d');
 
         //define canvas properties
