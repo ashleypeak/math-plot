@@ -817,6 +817,8 @@ class MathPlot extends HTMLElement {
                 return (x => parseFloat(node.textContent));
             case 'degree':
                 return this._parseMathMLNode(node.firstChild);
+            case 'pi':
+                return (x => Math.PI);
             default:
                 throw new Error('Unknown MathML element: ' + node.tagName);
         }
