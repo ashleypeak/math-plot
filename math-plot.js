@@ -92,13 +92,14 @@ class Rational {
      */
     _parseInput(number) {
         if(typeof number === 'number') {
-            assert(number === parseInt(number), 'Invalid number.');
+            assert(number === parseInt(number), 'Invalid number:' + number);
 
             return {mult: number, pi: 0};
         } else if(typeof number === 'string') {
-            assert(number !== '', 'Invalid number.')
+            assert(number !== '', 'Invalid number:' + number)
             let pattern = /^(-)?([0-9]+)?(pi)?$/
             let matches = number.match(pattern);
+            assert(matches !== null, 'Invalid number:' + number);
 
             let [neg, multStr, piStr] = matches.slice(1);
             let mult = typeof multStr !== 'undefined' ? parseInt(multStr) : 1;
@@ -110,7 +111,7 @@ class Rational {
 
             return {mult: mult, pi: pi};
         } else {
-            throw new Error("Invalid numerator.");
+            throw new Error('Invalid number:' + number);
         }
     }
 
