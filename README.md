@@ -81,9 +81,11 @@ The purpose of the gutters is to allow you to, for example, plot a `sin` curve w
 
 Should be included as a direct child of `<math-plot>`. The `<math-plot-function>` element will accept an argument `rule`, a description of a function in [content MathML](https://www.w3.org/TR/MathML3/chapter4.html), and plot that function.
 
-| Attribute | Value    | Default    | Description                 |
-| --------- | -------- | ---------- | --------------------------- |
-| rule      | *MathML* | *Required* | The function to be plotted. |
+| Attribute | Value                | Default    | Description                 |
+| --------- | -------------------- | ---------- | --------------------------- |
+| rule      | *MathML*             | *Required* | The function to be plotted. |
+| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 
 The following MathML elements are accepted:
 
@@ -112,7 +114,9 @@ The following `<apply>` functions are implemented:
 
 Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` element will accept two arguments `point-a` and `point-b`, and will plot the line running through both.
 
-| Attribute | Value          | Default    | Description                             |
-| --------- | -------------- | ---------- | --------------------------------------- |
-| point-a   | Rational pair* | *Required* | A point that the line will run through. |
-| point-b   | Rational pair* | *Required* | A point that the line will run through. |
+| Attribute | Value                | Default    | Description                             |
+| --------- | -------------------- | ---------- | --------------------------------------- |
+| point-a   | Rational pair*       | *Required* | A point that the line will run through. |
+| point-b   | Rational pair*       | *Required* | A point that the line will run through. |
+| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |

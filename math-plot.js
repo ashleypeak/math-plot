@@ -3,6 +3,11 @@ const LABELWIDTH = 15;
 const LABELHEIGHT = 21;
 const FONTSIZE = 17;
 const MINSTEPSIZE = 40;
+const DEFAULT_PLOT_PARAMETERS = {
+    lineWidth: 2,
+    strokeStyle: '#000000',
+    lineDash: []
+};
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
     <canvas id='canvas' class='canvas'></canvas>
@@ -586,7 +591,7 @@ class MathPlot extends HTMLElement {
 
         for(let child of this.children) {
             let tag = child.tagName.toLowerCase();
-            tag = tag.substring('math-plot-'.length);
+            tag = tag.substring(TAGNAME.length + 1); // remove math-plot-
 
             switch(tag) {
                 case 'function':
@@ -599,16 +604,28 @@ class MathPlot extends HTMLElement {
         }
     }
 
+    /**
+     * Given a <math-plot-function> element, plot the function described.
+     * 
+     * @param  {HTMLElement} el The <math-plot-function> element
+     */
     _plotFunctionElement(el) {
         let rule = el.getAttribute('rule');
         let func = this.parseMathML(rule);
+        let params = this._getParams(el);
 
-        this.plotFunction(func);
+        this.plotFunction(func, params);
     }
 
+    /**
+     * Given a <math-plot-line> element, plot the line described.
+     * 
+     * @param  {HTMLElement} el The <math-plot-line> element
+     */
     _plotLineElement(el) {
         let pointA = Rational.parseTuple(el.getAttribute('point-a'));
         let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+        let params = this._getParams(el);
 
         pointA = pointA.map(num => num.approx);
         pointB = pointB.map(num => num.approx);
@@ -622,12 +639,37 @@ class MathPlot extends HTMLElement {
         if(run === 0) {
             assert(rise !== 0,
                 '<plot-line> The two line points cannot be the same.');
-            this.plotVerticalLine(pointA[0]);
+            this.plotVerticalLine(pointA[0], params);
         } else {
             let m = rise / run;
             let func = (x => m * (x - pointA[0]) + pointA[1]);
-            this.plotFunction(func);
+            this.plotFunction(func, params);
         }
+    }
+
+    /**
+     * Given a <math-plot-?> subelement, collect its generic properties, like
+     * color and whether or not it's dashed, and return them as an object to
+     * be used in _plotRender().
+     *
+     * @see  _plotRender()
+     * @param  {HTMLElement} el The element whose properties are being collected
+     * @return {Object}         The collected properties
+     */
+    _getParams(el) {
+        let params = new Object();
+
+        let color = el.getAttribute('color');
+        if(color !== null) {
+            params.strokeStyle = color;
+        }
+
+        let dashed = el.getAttribute('dashed');
+        if(dashed !== null) {
+            params.lineDash = [10, 5];
+        }
+
+        return params;
     }
 
     /**
@@ -919,6 +961,13 @@ class MathPlot extends HTMLElement {
         }
     }
 
+    /**
+     * Given a MathML node, assert that it has exactly `count` children, or
+     * else raise an error.
+     * 
+     * @param  {Element} node  The MathML node whose children are being counted
+     * @param  {Number}  count The expected number of children
+     */
     _assertChildren(node, count) {
         let action = node.firstChild,tagName;
         assert(node.childElementCount === count,
@@ -932,7 +981,7 @@ class MathPlot extends HTMLElement {
      * 
      * @param  {Function} func A JS function describing the curve to be plotted
      */
-    plotFunction(func) {
+    plotFunction(func, params) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
         let drawStep = 1 / this.scale.x;
 
@@ -974,10 +1023,8 @@ class MathPlot extends HTMLElement {
                 prevY = curY;
             }
         this.context.restore();
-        
-        this.context.lineJoin = "round";
-        this.context.lineWidth = 2;
-        this.context.stroke();
+
+        this._renderLine(params);
     }
 
     /**
@@ -986,7 +1033,7 @@ class MathPlot extends HTMLElement {
      * 
      * @param  {Number} x The x intercept of the line
      */
-    plotVerticalLine(x) {
+    plotVerticalLine(x, params) {
         this.context.save();
             this.context.translate(this.center.x, this.center.y);
             this.context.scale(this.scale.x, this.scale.y);
@@ -996,10 +1043,28 @@ class MathPlot extends HTMLElement {
             this.context.lineTo(x, this.drawRegion.top);
         this.context.restore();
         
-        this.context.lineWidth = 2;
+        this._renderLine(params);
+    }
+
+    /**
+     * Called by the various _plot* functions, sets context attributes to
+     * either their defauls (defined in DEFAULT_PLOT_PARAMETERS) or their
+     * overrides in `parms`, then draws a line.
+     *
+     * @see  _getParams
+     * @param  {Object} parms The overriden parameters
+     */
+    _renderLine(parms) {
+        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
+
+        this.context.lineJoin = "round";
+        this.context.lineWidth = params.lineWidth;
+        this.context.strokeStyle = params.strokeStyle;
+        this.context.setLineDash(params.lineDash);
         this.context.stroke();
     }
 }
+
 
 /**
  * A WebComponent element which is stritly a child of the <math-plot> element.
@@ -1019,5 +1084,20 @@ class MathPlotFunction extends HTMLElement {
 }
 
 
+/**
+ * Defines a line to be plotted on the MathPlot canvas.
+ * @see  MathPlotFunction
+ */
+class MathPlotLine extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
 customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
+customElements.define(TAGNAME + '-line', MathPlotLine);
