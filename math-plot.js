@@ -28,6 +28,156 @@ function assert(condition, message) {
 }
 
 
+class MathML {
+    /**
+     * @constructs
+     *
+     * This class is constructed with a MathML string, which is transformed
+     * into a function performing the operation described by the MathML. This
+     * function will be stored as this._func, and executed using this.exec().
+     *
+     * Usage:
+     *     let mathml = new MathML('<apply><times/><pi/><ci>x</ci></apply>');
+     *     console.log(mathml.exec(2)); // => 6.283...
+     *
+     * Note specifically:
+     *  - x is the only <ci> allowed in the MathML string.
+     *  - this._func() is a function of the form func(x) which will apply
+     *    the described action. e.g.:
+     *        <apply><power/><ci>x</ci><cn>2</cn></apply> will result in:
+     *        ((x) => x**2)
+     *  - MathML can be arbitrarily complex, but must have exactly one
+     *    root-level node.
+     * 
+     * NOTE: Due to limitations on composing functions recursively, the actual
+     *       function returned isn't as simple as suggested above, although it
+     *       has the same net effect. Highly complex functions may be costly
+     *       to run.
+     * 
+     * @param  {String}   mathml A MathML <apply> node
+     */
+    constructor(mathml) {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(mathml, 'text/xml');
+        let root = doc.firstChild;
+
+        this._func = this._parseMathMLNode(root);
+    }
+
+    /**
+     * Get the function performing the action described by the MathML string.
+     *
+     * Although phrased as a get (and it is one), because it returns a function
+     * it can be used to execute the MathML operation. So it can be used e.g.:
+     *
+     *     let mathml = new MathML('<apply><times/><pi/><ci>x</ci></apply>');
+     *     console.log(mathml.exec(2)); // => 6.283...
+     * 
+     * @return {Function} The function described by the MathML string used to
+     *                    constuct this object.
+     */
+    get exec() {
+        return this._func
+    }
+
+    /**
+     * Parse any MathML node, returning a function which will perform the
+     * described action.
+     *
+     * @see constructor
+     * @param  {String}   node A MathML <apply> node
+     * @return {Function}      A function performing the action described by
+     *                         `node`
+     */
+    _parseMathMLNode(node) {
+        switch(node.tagName) {
+            case 'apply':
+                return this._parseMathMLApply(node);
+            case 'ci':
+                assert(node.textContent === 'x', '<ci> can only take \'x\' in <' + TAGNAME + '>.')
+
+                return (x => x);
+            case 'cn':
+                assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
+
+                return (x => parseFloat(node.textContent));
+            case 'degree':
+                return this._parseMathMLNode(node.firstChild);
+            case 'pi':
+                return (x => Math.PI);
+            default:
+                throw new Error('Unknown MathML element: ' + node.tagName);
+        }
+    }
+
+    /**
+     * Parse an <apply> MathML node, returning a function which will perform
+     * the <apply> action.
+     *
+     * @see parseMathML
+     * @param  {String}   node A MathML <apply> node
+     * @return {Function}      A function performing the action described by
+     *                         `node`
+     */
+    _parseMathMLApply(node) {
+        assert(node.childElementCount >= 2, "<apply> must have at least two children.")
+
+        let action = node.firstChild.tagName;
+        let argNodes = Array.from(node.children).slice(1);
+        let args = argNodes.map(this._parseMathMLNode, this);
+
+        switch(action) {
+            case 'plus':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) + args[1](x));
+            case 'minus':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) - args[1](x));
+            case 'times':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) * args[1](x));
+            case 'divide':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) / args[1](x));
+            case 'power':
+                this._assertChildren(node, 3);
+                return ((x) => args[0](x) ** args[1](x));
+            case 'root':
+                this._assertChildren(node, 3);
+                return ((x) => args[1](x) ** (1 / args[0](x)));
+            case 'sin':
+                this._assertChildren(node, 2);
+                return ((x) => Math.sin(args[0](x)));
+            case 'cos':
+                this._assertChildren(node, 2);
+                return ((x) => Math.cos(args[0](x)));
+            case 'tan':
+                this._assertChildren(node, 2);
+                return ((x) => Math.tan(args[0](x)));
+            default:
+                throw new Error('Unknown <apply> action: ' + action);
+        }
+    }
+
+    /**
+     * Given a MathML node, assert that it has exactly `count` children, or
+     * else raise an error.
+     * 
+     * @param  {Element} node  The MathML node whose children are being counted
+     * @param  {Number}  count The expected number of children
+     */
+    _assertChildren(node, count) {
+        let action = node.firstChild,tagName;
+        assert(node.childElementCount === count,
+            '<apply><' + action + '/> must have three children.')
+    }
+
+    static parseList(mathml) {
+
+    }
+}
+
+
 /**
  * A class for manipulating rational numbers. Stored as a pair of integers
  * numerator and denominator.
@@ -459,34 +609,41 @@ class MathPlot extends HTMLElement {
         this.drawXUnits = this.getAttribute('hide-x-units') !== null ? false : true;
         this.drawYUnits = this.getAttribute('hide-y-units') !== null ? false : true;
 
-        let rangeXRational =
-            Rational
-                .parseTuple(this.getAttribute('range-x') || "(-10, 10)")
-                .map(el => el.approx);
-        let rangeYRational =
-            Rational
-                .parseTuple(this.getAttribute('range-y') || "(-10, 10)")
-                .map(el => el.approx);
-
-        assert(
-            rangeXRational.length == 2 && rangeXRational[0] < rangeXRational[1],
-            "Invalid range-x provided.")
-        assert(
-            rangeYRational.length == 2 && rangeYRational[0] < rangeYRational[1],
-            "Invalid range-y provided.")
-
         this.range = {
-            x: {min: rangeXRational[0], max: rangeXRational[1]},
-            y: {min: rangeYRational[0], max: rangeYRational[1]},
+            x: this._parseRange(this.getAttribute('range-x') || '(-10, 10)'),
+            y: this._parseRange(this.getAttribute('range-y') || '(-10, 10)')
         }
-        this.range.x.size = this.range.x.max - this.range.x.min;
-        this.range.y.size = this.range.y.max - this.range.y.min;
 
         this.gutter = {
             left: parseInt(this.getAttribute('gutter-left')) || 20,
             right: parseInt(this.getAttribute('gutter-right')) || 20,
             top: parseInt(this.getAttribute('gutter-top')) || 20,
             bottom: parseInt(this.getAttribute('gutter-bottom')) || 20
+        }
+    }
+
+    _parseRange(rangeStr) {
+        rangeStr = rangeStr.trim();
+        if(rangeStr.length > 6 && rangeStr.slice(0, 10) == '<list>') {
+            console.log('mathml');
+            let rangeList = MathML.parseList(rangeStr);
+            console.log(rangeList);
+        } else {
+            let rangeRational =
+                Rational.parseTuple(rangeStr).map(el => el.approx);
+
+            assert(
+                rangeRational.length == 2 &&
+                rangeRational[0] < rangeRational[1],
+                "Invalid range provided.");
+
+            let range = {
+                min: rangeRational[0],
+                max: rangeRational[1],
+                size: rangeRational[1] - rangeRational[0]
+            };
+
+            return range;
         }
     }
 
@@ -614,10 +771,10 @@ class MathPlot extends HTMLElement {
      */
     _plotFunctionElement(el) {
         let rule = el.getAttribute('rule');
-        let func = this.parseMathML(rule);
+        let mathml = new MathML(rule);
         let params = this._getParams(el);
 
-        this.plotFunction(params, func);
+        this.plotFunction(params, mathml.exec);
     }
 
     /**
@@ -877,128 +1034,6 @@ class MathPlot extends HTMLElement {
             //can't be zero because i will always be incremented at least once
             return baseStepSize.divide(i - 2);
         }
-    }
-
-    /**
-     * Given a MathML string, return a function which will perform the
-     * described action.
-     *
-     * Specifically:
-     *  - x is the only <ci> allowed in the MathML string.
-     *  - Returns a function of the form func(x) which will apply descibed
-     *    action. e.g.:
-     *        <apply><power/><ci>x</ci><cn>2</cn></apply> will return:
-     *        ((x) => x**2)
-     *  - MathML can be arbitrarily complex, but must have exactly one
-     *    root-level node.
-     * 
-     * NOTE: Due to limitations on composing functions recursively, the actual
-     *       function returned isn't as simple as suggested above, although it
-     *       has the same net effect. Highly complex functions may be costly
-     *       to run.
-     * 
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
-     */
-    parseMathML(rule) {
-        let parser = new DOMParser();
-        let mathml = parser.parseFromString(rule, 'text/xml');
-        let root = mathml.firstChild;
-
-        return this._parseMathMLNode(root);
-    }
-
-    /**
-     * Parse any MathML node, returning a function which will perform the
-     * described action.
-     *
-     * @see parseMathML
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
-     */
-    _parseMathMLNode(node) {
-        switch(node.tagName) {
-            case 'apply':
-                return this._parseMathMLApply(node);
-            case 'ci':
-                assert(node.textContent === 'x', '<ci> can only take \'x\' in <' + TAGNAME + '>.')
-
-                return (x => x);
-            case 'cn':
-                assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
-
-                return (x => parseFloat(node.textContent));
-            case 'degree':
-                return this._parseMathMLNode(node.firstChild);
-            case 'pi':
-                return (x => Math.PI);
-            default:
-                throw new Error('Unknown MathML element: ' + node.tagName);
-        }
-    }
-
-    /**
-     * Parse an <apply> MathML node, returning a function which will perform
-     * the <apply> action.
-     *
-     * @see parseMathML
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
-     */
-    _parseMathMLApply(node) {
-        assert(node.childElementCount >= 2, "<apply> must have at least two children.")
-
-        let action = node.firstChild.tagName;
-        let argNodes = Array.from(node.children).slice(1);
-        let args = argNodes.map(this._parseMathMLNode, this);
-
-        switch(action) {
-            case 'plus':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) + args[1](x));
-            case 'minus':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) - args[1](x));
-            case 'times':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) * args[1](x));
-            case 'divide':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) / args[1](x));
-            case 'power':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) ** args[1](x));
-            case 'root':
-                this._assertChildren(node, 3);
-                return ((x) => args[1](x) ** (1 / args[0](x)));
-            case 'sin':
-                this._assertChildren(node, 2);
-                return ((x) => Math.sin(args[0](x)));
-            case 'cos':
-                this._assertChildren(node, 2);
-                return ((x) => Math.cos(args[0](x)));
-            case 'tan':
-                this._assertChildren(node, 2);
-                return ((x) => Math.tan(args[0](x)));
-            default:
-                throw new Error('Unknown <apply> action: ' + action);
-        }
-    }
-
-    /**
-     * Given a MathML node, assert that it has exactly `count` children, or
-     * else raise an error.
-     * 
-     * @param  {Element} node  The MathML node whose children are being counted
-     * @param  {Number}  count The expected number of children
-     */
-    _assertChildren(node, count) {
-        let action = node.firstChild,tagName;
-        assert(node.childElementCount === count,
-            '<apply><' + action + '/> must have three children.')
     }
 
     /**
