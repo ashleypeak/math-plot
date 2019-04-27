@@ -636,21 +636,10 @@ class MathPlot extends HTMLElement {
      *     {min:_, max:_, size:_}
      * 
      * @param  {String} rangeStr The string representation of the range
-     * @return {Object}          The calculated range, in floats
+     * @return {Object}          The calculated range, in ints/floats
      */
     _parseRange(rangeStr) {
-        rangeStr = rangeStr.trim();
-        if(rangeStr.length >= 6 && rangeStr.slice(0, 6) == '<list>') {
-            let rangeListMathML = new MathML(rangeStr);
-
-            //since a range shouldn't have any unknowns in it, it shouldn't
-            //matter what argument you pass exec(). Just pass something because
-            //all MathML functions are built to expect an x value
-            var rangeList = rangeListMathML.exec(0);
-        } else {
-            var rangeList =
-                Rational.parseTuple(rangeStr).map(el => el.approx);
-        }
+        let rangeList = this._parseList(rangeStr)
 
         assert(
             rangeList.length == 2 &&
@@ -664,6 +653,42 @@ class MathPlot extends HTMLElement {
         };
 
         return range;
+    }
+
+    /**
+     * Given a string describing a list, either as a tuple of Rationals or a
+     * MathML <list>, return an equivalent array of ints/floats.
+     *
+     * The list can, as described, either be a given as a tuple of Rationals:
+     *     "(0, 1, 2pi)"
+     * or as a MathML <list>:
+     *     "<list>
+     *         <cn>0</cn>
+     *         <cn>1</cn>
+     *         <apply><times/><cn>2</cn><pi/></apply>
+     *      </list>"
+     *
+     * The return will be an array of ints/floats:
+     *     [0, 1, 6.283...]
+     * 
+     * @param  {String} listStr The string representation of the list
+     * @return {Array}          An equivalent array of ints/floats
+     */
+    _parseList(listStr) {
+        listStr = listStr.trim();
+        if(listStr.length >= 6 && listStr.slice(0, 6) == '<list>') {
+            let listMathML = new MathML(listStr);
+
+            //since a range shouldn't have any unknowns in it, it shouldn't
+            //matter what argument you pass exec(). Just pass something because
+            //all MathML functions are built to expect an x value
+            var list = listMathML.exec(0);
+        } else {
+            var list =
+                Rational.parseTuple(listStr).map(el => el.approx);
+        }
+
+        return list;
     }
 
     /**
@@ -802,12 +827,9 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-line> element
      */
     _plotLineElement(el) {
-        let pointA = Rational.parseTuple(el.getAttribute('point-a'));
-        let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+        let pointA = this._parseList(el.getAttribute('point-a'));
+        let pointB = this._parseList(el.getAttribute('point-b'));
         let params = this._getParams(el);
-
-        pointA = pointA.map(num => num.approx);
-        pointB = pointB.map(num => num.approx);
 
         assert(pointA.length === 2 && pointB.length === 2,
             '<plot-line> Invalid points provided.');
@@ -833,13 +855,10 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-line-segment> element
      */
     _plotLineSegmentElement(el) {
-        let pointA = Rational.parseTuple(el.getAttribute('point-a'));
-        let pointB = Rational.parseTuple(el.getAttribute('point-b'));
+        let pointA = this._parseList(el.getAttribute('point-a'));
+        let pointB = this._parseList(el.getAttribute('point-b'));
         let label = el.getAttribute('label');
         let params = this._getParams(el);
-
-        pointA = pointA.map(num => num.approx);
-        pointB = pointB.map(num => num.approx);
 
         assert(pointA.length === 2 && pointB.length === 2,
             '<plot-line-segment> Invalid points provided.');

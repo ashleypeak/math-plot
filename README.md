@@ -127,8 +127,8 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` el
 
 | Attribute | Value                | Default    | Description                             |
 | --------- | -------------------- | ---------- | --------------------------------------- |
-| point-a   | Rational pair*       | *Required* | A point that the line will run through. |
-| point-b   | Rational pair*       | *Required* | A point that the line will run through. |
+| point-a   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
+| point-b   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 
@@ -138,8 +138,8 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 
 | Attribute | Value                | Default    | Description                  |
 | --------- | -------------------- | ---------- | ---------------------------- |
-| point-a   | Rational pair*       | *Required* | One end of the line segment. |
-| point-b   | Rational pair*       | *Required* | One end of the line segment. |
+| point-a   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
+| point-b   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 | label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
