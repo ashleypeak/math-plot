@@ -105,6 +105,11 @@ class MathML {
                 return this._parseMathMLNode(node.firstChild);
             case 'pi':
                 return (x => Math.PI);
+            case 'list':
+                let elementNodes = Array.from(node.children);
+                let elements = elementNodes.map(this._parseMathMLNode, this);
+
+                return (x => elements.reduce((a, e) => a.concat([e(x)]), []));
             default:
                 throw new Error('Unknown MathML element: ' + node.tagName);
         }
@@ -170,10 +175,6 @@ class MathML {
         let action = node.firstChild,tagName;
         assert(node.childElementCount === count,
             '<apply><' + action + '/> must have three children.')
-    }
-
-    static parseList(mathml) {
-
     }
 }
 
@@ -622,29 +623,47 @@ class MathPlot extends HTMLElement {
         }
     }
 
+    /**
+     * Given the value of a `range` attribute of <math-plot>, return the parsed
+     * range.
+     *
+     * The range can either be a given as a tuple of Rationals:
+     *     "(0, 2pi)"
+     * or as a MathML <list>:
+     *     "<list><cn>0</cn><apply><times/><cn>2</cn><pi/></apply></list>"
+     *
+     * The range is returned as an object:
+     *     {min:_, max:_, size:_}
+     * 
+     * @param  {String} rangeStr The string representation of the range
+     * @return {Object}          The calculated range, in floats
+     */
     _parseRange(rangeStr) {
         rangeStr = rangeStr.trim();
-        if(rangeStr.length > 6 && rangeStr.slice(0, 10) == '<list>') {
-            console.log('mathml');
-            let rangeList = MathML.parseList(rangeStr);
-            console.log(rangeList);
+        if(rangeStr.length >= 6 && rangeStr.slice(0, 6) == '<list>') {
+            let rangeListMathML = new MathML(rangeStr);
+
+            //since a range shouldn't have any unknowns in it, it shouldn't
+            //matter what argument you pass exec(). Just pass something because
+            //all MathML functions are built to expect an x value
+            var rangeList = rangeListMathML.exec(0);
         } else {
-            let rangeRational =
+            var rangeList =
                 Rational.parseTuple(rangeStr).map(el => el.approx);
-
-            assert(
-                rangeRational.length == 2 &&
-                rangeRational[0] < rangeRational[1],
-                "Invalid range provided.");
-
-            let range = {
-                min: rangeRational[0],
-                max: rangeRational[1],
-                size: rangeRational[1] - rangeRational[0]
-            };
-
-            return range;
         }
+
+        assert(
+            rangeList.length == 2 &&
+            rangeList[0] < rangeList[1],
+            "Invalid range provided.");
+
+        let range = {
+            min: rangeList[0],
+            max: rangeList[1],
+            size: rangeList[1] - rangeList[0]
+        };
+
+        return range;
     }
 
     /**

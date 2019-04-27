@@ -48,8 +48,8 @@ The `<math-plot>` element will create a canvas, and draw a cartesian plane on it
 | step-y        | Rational*      | *Calculated* | The distance between unit markers on the y axis. |
 | hide-x-units  | *No value*     | -            | Don't show unit markers on the x axis. |
 | hide-y-units  | *No value*     | -            | Don't show unit markers on the y axis. |
-| range-x       | Rational pair* | (-10, 10)    | The x values between which the plane will be plotted. |
-| range-y       | Rational pair* | (-10, 10)    | The y values between which the plane will be plotted. |
+| range-x       | Rational pair* or MathML `<list>`* | (-10, 10)    | The x values between which the plane will be plotted. |
+| range-y       | Rational pair* or MathML `<list>`* | (-10, 10)    | The y values between which the plane will be plotted. |
 | gutter-left   | Integer        | 20 | The space, in pixels, outside the range on the left which will also be plotted. |
 | gutter-right  | Integer        | 20 | The space, in pixels, outside the range on the right which will also be plotted. |
 | gutter-top    | Integer        | 20 | The space, in pixels, outside the range on the top which will also be plotted. |
@@ -72,6 +72,17 @@ Ideally, it should allow you to intuitively type a number, but here are some exa
 | "pi/2" | 0.5*pi |
 
 **Note:** The main limitation is that floats are **not** accepted. You must input a fraction instead.
+
+##### MathML `<list>`
+
+The range attributes can also be provided as a MathML `<list>` element. The notation for `(0, 2pi)`, for instance, would be:
+
+```xml
+<list>
+    <cn>0</cn>
+    <apply><times/><cn>2</cn><pi/></apply>
+</list>
+```
 
 ##### Gutters:
 
