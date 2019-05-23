@@ -96,7 +96,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-function>
 | --------- | -------------------- | ---------- | --------------------------- |
 | rule      | *MathML*             | *Required* | The function to be plotted. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
-| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
+| dashed    | Array*               | -          | If included, the curve will be dashed rather than solid. |
 
 The following MathML elements are accepted:
 
@@ -121,6 +121,10 @@ The following `<apply>` functions are implemented:
 | `<cos>` | |
 | `<tan>` | |
 
+##### Dashed array:
+
+To draw a dashed line, set the `dashed` attribute to an array of the form "[x, y, ...]", where each integer value is the size of a segment. For example, "[10, 5]" would be a line of repeating segments of ten pixels drawn, then five pixels skipped. This format is based on the canvas `setLineDash` function, See the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setLineDash) for more detail.
+
 #### Plotting lines: `<math-plot-line>`
 
 Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` element will accept two arguments `point-a` and `point-b`, and will plot the line running through both.
@@ -130,7 +134,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` el
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
-| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
+| dashed    | Array*               | -          | If included, the curve will be dashed rather than solid. |
 
 #### Plotting line segments: `<math-plot-line-segment>`
 
@@ -141,7 +145,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
-| dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
+| dashed    | Array*               | -          | If included, the curve will be dashed rather than solid. |
 | label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
 
 **Note:** The logic for positioning the label is not sophisticated. If unsatisfactory, use the `<math-plot-text>` element instead.
