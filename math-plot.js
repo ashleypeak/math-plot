@@ -904,6 +904,9 @@ class MathPlot extends HTMLElement {
         let text = el.getAttribute('text');
         let params = this._getParams(el);
 
+        assert(typeof text === "string" && text.length > 0,
+            '<plot-text> No text given.');
+
         let pos = {}
 
         if(top !== null) {

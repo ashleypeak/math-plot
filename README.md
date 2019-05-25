@@ -168,7 +168,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-text>` el
 
 | Attribute | Value                | Default    | Description                  |
 | --------- | -------------------- | ---------- | ---------------------------- |
-| text      | String               | *None*     | The string to be rendered. |
+| text      | String               | *Required* | The string or character to be rendered. |
 | top*      | Int                  | *None*     | The vertical position of the text, in coordinate units. |
 | bottom*   | Int                  | *None*     | The vertical position of the text, in coordinate units. |
 | left*     | Int                  | *None*     | The horizontal position of the text, in coordinate units. |
