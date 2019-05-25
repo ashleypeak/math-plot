@@ -144,11 +144,23 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 | --------- | -------------------- | ---------- | ---------------------------- |
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
-| label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
+| label     | String               | *None*     | A text label for the line segment. Will be written beside or above the line segment. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | Array*               | -          | If included, the curve will be dashed rather than solid. |
 
 **Note:** The logic for positioning the label is not sophisticated. If unsatisfactory, use the `<math-plot-text>` element instead.
+
+#### Plotting points: `<math-plot-point>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-point>` element will mark a point at the position `position`, optionally labelled with `label`.
+
+| Attribute | Value                | Default    | Description                  |
+| --------- | -------------------- | ---------- | ---------------------------- |
+| position  | Rational pair* or MathML `<list>`* | *Required* | The position of the point to be marked. |
+| label     | String               | *None*     | A text label for the point. |
+| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+
+**Note:** The logic for positioning the label is not sophisticated. In fact, it's just placed below and to the right of the point, with no consideration for collision. If unsatisfactory, use the `<math-plot-text>` element instead.
 
 #### Plotting text: `<math-plot-text>`
 

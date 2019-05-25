@@ -1,4 +1,5 @@
 const TAGNAME = 'math-plot';
+const POINTRADIUS = 3;
 const LABELWIDTH = 15;
 const LABELHEIGHT = 21;
 const FONTSIZE = 17;
@@ -804,6 +805,9 @@ class MathPlot extends HTMLElement {
                 case 'line-segment':
                     this._plotLineSegmentElement(child);
                     break;
+                case 'point':
+                    this._plotPointElement(child);
+                    break;
                 case 'text':
                     this._plotTextElement(child);
                     break;
@@ -870,6 +874,21 @@ class MathPlot extends HTMLElement {
             '<plot-line-segment> The two points cannot be the same.');
 
         this.plotLineSegment(params, pointA, pointB, label);
+    }
+
+    /**
+     * Given a <math-plot-point> element, plot the point.
+     * 
+     * @param  {HTMLElement} el The <math-plot-point> element
+     */
+    _plotPointElement(el) {
+        let pos = this._parseList(el.getAttribute('position'));
+        let label = el.getAttribute('label');
+        let params = this._getParams(el);
+
+        assert(pos.length === 2, '<plot-point> Invalid position provided.');
+
+        this.plotPoint(params, pos, label);
     }
 
     /**
@@ -1240,6 +1259,38 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Mark the point at `pos` on the plot, giving it a label `label` if set
+     *
+     * The label is just positioned below and to the right of the point,
+     * there's no collision logic. If more precision is needed, use the
+     * <math-plot-text> element to label.
+     * 
+     * @param  {Object} params Point/label parameters, @see _renderLine
+     * @param  {Array}  pos    The position of the point being plotted
+     * @param  {String} label  (Optional) A text label for the point
+     */
+    plotPoint(params, pos, label) {
+        // Can't transform canvas because if x and y scales aren't the same the
+        // point will be deformed. Instead, calculate point position in canvas
+        // coordinates.
+        let xPosCanvasCoords = this.center.x + pos[0] * this.unitSize.x;
+        let yPosCanvasCoords = this.center.y - pos[1] * this.unitSize.y;
+        let parms = Object.assign({}, DEFAULT_PLOT_PARAMETERS, params);
+
+        this.context.beginPath();
+        this.context.arc(xPosCanvasCoords, yPosCanvasCoords, POINTRADIUS, 0,
+                         2*Math.PI);
+        this.context.fillStyle = parms.color;
+        this.context.fill();
+
+        if(label !== null) {
+            let position = {left: pos[0], top: pos[1]};
+
+            this._renderText(params, label, position);
+        }
+    }
+
+    /**
      * Given a position `pos` and a string `text`, render `text` at `pos`
      * 
      * @param  {Object} params Line parameters, @see _renderLine
@@ -1368,6 +1419,20 @@ class MathPlotLineSegment extends HTMLElement {
 
 
 /**
+ * Defines a point to be plotted on the MathPlot canvas.
+ * @see  MathPlotFunction
+ */
+class MathPlotPoint extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
+/**
  * Defines a character or string of text to be plotted on the MathPlot canvas.
  * @see  MathPlotFunction
  */
@@ -1385,4 +1450,5 @@ customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
 customElements.define(TAGNAME + '-line', MathPlotLine);
 customElements.define(TAGNAME + '-line-segment', MathPlotLineSegment);
+customElements.define(TAGNAME + '-point', MathPlotPoint);
 customElements.define(TAGNAME + '-text', MathPlotText);
