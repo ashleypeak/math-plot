@@ -144,8 +144,27 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 | --------- | -------------------- | ---------- | ---------------------------- |
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
+| label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | Array*               | -          | If included, the curve will be dashed rather than solid. |
-| label     | String               | *None*     | A text label for the line segment. Will be written beside or above it. |
 
 **Note:** The logic for positioning the label is not sophisticated. If unsatisfactory, use the `<math-plot-text>` element instead.
+
+#### Plotting text: `<math-plot-text>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-text>` element will render the text in the attribute `text` on the plot.
+
+| Attribute | Value                | Default    | Description                  |
+| --------- | -------------------- | ---------- | ---------------------------- |
+| text      | String               | *None*     | The string to be rendered. |
+| top*      | Int                  | *None*     | The vertical position of the text, in coordinate units. |
+| bottom*   | Int                  | *None*     | The vertical position of the text, in coordinate units. |
+| left*     | Int                  | *None*     | The horizontal position of the text, in coordinate units. |
+| right*    | Int                  | *None*     | The horizontal position of the text, in coordinate units. |
+| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+
+##### Text position
+
+Only one of `top` and `bottom` will be used. If both are present, `top` will be used. Similarly, for `left` and `right`, `left` will be preferenced.
+
+The position attributes should be given in terms of coordinates on the graph. A text element at `top="1" left="1"` will be rendered with its top-left corner at the point `(1, 1)` on the graph.

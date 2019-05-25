@@ -804,6 +804,9 @@ class MathPlot extends HTMLElement {
                 case 'line-segment':
                     this._plotLineSegmentElement(child);
                     break;
+                case 'text':
+                    this._plotTextElement(child);
+                    break;
             }
         }
     }
@@ -867,6 +870,36 @@ class MathPlot extends HTMLElement {
             '<plot-line-segment> The two points cannot be the same.');
 
         this.plotLineSegment(params, pointA, pointB, label);
+    }
+
+    /**
+     * Given a <math-plot-text> element, render the text described.
+     * 
+     * @param  {HTMLElement} el The <math-plot-text> element
+     */
+    _plotTextElement(el) {
+        let top = el.getAttribute('top');
+        let bottom = el.getAttribute('bottom');
+        let left = el.getAttribute('left');
+        let right = el.getAttribute('right');
+        let text = el.getAttribute('text');
+        let params = this._getParams(el);
+
+        let pos = {}
+
+        if(top !== null) {
+            pos.top = parseInt(top);
+        } else if(bottom !== null) {
+            pos.bottom = parseInt(bottom);
+        }
+
+        if(left !== null) {
+            pos.left = parseInt(left);
+        } else if(right !== null) {
+            pos.right = parseInt(right);
+        }
+
+        this.plotText(params, text, pos);
     }
 
     /**
@@ -1037,6 +1070,12 @@ class MathPlot extends HTMLElement {
     /**
      * Calculate the smallest step size (of the form n units or 1/n units)
      * larger than MINSTEPSIZE.
+     *
+     * A step is the distance between two unit markers on an axis. MINSTEPSIZE
+     * is the minimum distance, in pixels, between two markers. This function
+     * will calculate the best step size in graph units, best being the
+     * smallest size greater than MINSTEPSIZE which is either an integer or the
+     * reciprocal of an integer.
      * 
      * @param  {String} axis The axis whose step size to calculate. 'x' or 'y'
      * @return {Rational}    The calculated step size
@@ -1201,6 +1240,17 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Given a position `pos` and a string `text`, render `text` at `pos`
+     * 
+     * @param  {Object} params Line parameters, @see _renderLine
+     * @param  {String} text   The text to be rendered
+     * @param  {Object} pos    The position of the text, @see _renderText()
+     */
+    plotText(params, text, pos) {
+        this._renderText(params, text, pos);
+    }
+
+    /**
      * Called by the various _plot* functions, sets context attributes to
      * either their defauls (defined in DEFAULT_PLOT_PARAMETERS) or their
      * overrides in `parms`, then draws a line.
@@ -1317,7 +1367,22 @@ class MathPlotLineSegment extends HTMLElement {
 }
 
 
+/**
+ * Defines a character or string of text to be plotted on the MathPlot canvas.
+ * @see  MathPlotFunction
+ */
+class MathPlotText extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
 customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
 customElements.define(TAGNAME + '-line', MathPlotLine);
 customElements.define(TAGNAME + '-line-segment', MathPlotLineSegment);
+customElements.define(TAGNAME + '-text', MathPlotText);
