@@ -839,14 +839,14 @@ class MathPlot extends HTMLElement {
         let params = this._getParams(el);
 
         assert(pointA.length === 2 && pointB.length === 2,
-            '<plot-line> Invalid points provided.');
+            '<math-plot-line> Invalid points provided.');
 
         let rise = pointB[1] - pointA[1];
         let run = pointB[0] - pointA[0];
 
         if(run === 0) {
             assert(rise !== 0,
-                '<plot-line> The two points cannot be the same.');
+                '<math-plot-line> The two points cannot be the same.');
             this.plotVerticalLine(params, pointA[0]);
         } else {
             let m = rise / run;
@@ -868,10 +868,10 @@ class MathPlot extends HTMLElement {
         let params = this._getParams(el);
 
         assert(pointA.length === 2 && pointB.length === 2,
-            '<plot-line-segment> Invalid points provided.');
+            '<math-plot-line-segment> Invalid points provided.');
 
         assert(pointA[0] !== pointB[0] || pointA[1] !== pointB[1],
-            '<plot-line-segment> The two points cannot be the same.');
+            '<math-plot-line-segment> The two points cannot be the same.');
 
         this.plotLineSegment(params, pointA, pointB, label);
     }
@@ -886,7 +886,8 @@ class MathPlot extends HTMLElement {
         let label = el.getAttribute('label');
         let params = this._getParams(el);
 
-        assert(pos.length === 2, '<plot-point> Invalid position provided.');
+        assert(pos.length === 2,
+            '<math-plot-point> Invalid position provided.');
 
         this.plotPoint(params, pos, label);
     }
@@ -905,7 +906,7 @@ class MathPlot extends HTMLElement {
         let params = this._getParams(el);
 
         assert(typeof text === "string" && text.length > 0,
-            '<plot-text> No text given.');
+            '<math-plot-text> No text given.');
 
         let pos = {}
 
