@@ -137,8 +137,14 @@ class MathML {
                 this._assertChildren(node, 3);
                 return ((x) => args[0](x) + args[1](x));
             case 'minus':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) - args[1](x));
+                assert(node.childElementCount === 2 || node.childElementCount === 3,
+                    '<apply><minus/> must have 2 or 3 children.');
+
+                if(node.childElementCount === 3) {
+                    return ((x) => args[0](x) - args[1](x));
+                } else {
+                    return ((x) => -args[0](x));
+                }
             case 'times':
                 this._assertChildren(node, 3);
                 return ((x) => args[0](x) * args[1](x));
@@ -173,9 +179,9 @@ class MathML {
      * @param  {Number}  count The expected number of children
      */
     _assertChildren(node, count) {
-        let action = node.firstChild,tagName;
+        let action = node.firstChild.tagName;
         assert(node.childElementCount === count,
-            '<apply><' + action + '/> must have three children.')
+            `<apply><${action}/> must have ${count-1} children.`);
     }
 }
 
