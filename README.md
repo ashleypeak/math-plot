@@ -95,6 +95,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-function>
 | Attribute | Value                | Default    | Description                 |
 | --------- | -------------------- | ---------- | --------------------------- |
 | rule      | *MathML*             | *Required* | The function to be plotted. |
+| domain    | Rational pair* or MathML `<list>`* | *Required* | The domain in which the function will be plotted. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 

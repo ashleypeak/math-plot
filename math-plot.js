@@ -823,9 +823,22 @@ class MathPlot extends HTMLElement {
     _plotFunctionElement(el) {
         let rule = el.getAttribute('rule');
         let mathml = new MathML(rule);
+        let domain = el.getAttribute('domain');
         let params = this._getParams(el);
 
-        this.plotFunction(params, mathml.exec);
+        if(domain !== null) {
+            domain = this._parseList(domain);
+
+            domain[0] = Math.max(domain[0], this.drawRegion.left);
+            domain[1] = Math.min(domain[1], this.drawRegion.right);
+
+            assert(domain.length === 2,
+                '<math-plot-function> Invalid domain provided.')
+
+            this.plotFunction(params, mathml.exec, domain);
+        } else {
+            this.plotFunction(params, mathml.exec);
+        }
     }
 
     /**
@@ -1141,12 +1154,19 @@ class MathPlot extends HTMLElement {
      * into the appropriate y coordinate for a (mathematical) function, plot
      * the curve of said mathematical function.
      * 
-     * @param  {Object}   params Line parameters, @see _renderLine
-     * @param  {Function} func   A JS function describing the curve to be plotted
+     * @param  {Object}   params  Line parameters, @see _renderLine
+     * @param  {Function} func    A JS function describing the curve to be
+     *                            plotted
+     * @param  {Array}    domain  (Optional) The domain in which to draw the
+     *                            function
      */
-    plotFunction(params, func) {
+    plotFunction(params, func, domain) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
         let drawStep = 1 / this.scale.x;
+
+        if(typeof domain == "undefined") {
+            domain = [this.drawRegion.left, this.drawRegion.right];
+        }
 
         this.context.save();
             //move (0,0) to graph centre;
@@ -1155,12 +1175,10 @@ class MathPlot extends HTMLElement {
             this.context.scale(this.scale.x, this.scale.y);
             
             this.context.beginPath();
-            this.context.moveTo(
-                this.drawRegion.left,
-                func(this.drawRegion.left));
+            this.context.moveTo(domain[0], func(domain[0]));
             
-            let prevY = func(this.drawRegion.left);
-            for(var x = this.drawRegion.left; x <= this.drawRegion.right; x += drawStep) {
+            let prevY = func(domain[0]);
+            for(var x = domain[0]; x <= domain[1]; x += drawStep) {
                 let curY = func(x);
 
                 if(Math.abs(curY-prevY) > this.drawRegion.height) {
