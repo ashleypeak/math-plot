@@ -1209,6 +1209,22 @@ class MathPlot extends HTMLElement {
 
                 prevY = curY;
             }
+
+            // Draw a line to the right end of the domain. If the gradient of
+            // a function near the right end of the domain is very large, even
+            // one drawStep's distance can leave a visible gap. This resolves
+            // it.
+            // The logic here is the same as above, rewritten to skip the bits
+            // which aren't relevant to the final point in the domain.
+            let curY = func(domain[1]);
+            if(Math.abs(curY-prevY) <= this.drawRegion.height) {
+                if(curY < this.drawRegion.top) {
+                    this.context.lineTo(domain[1], curY);
+                } else if(prevY < this.drawRegion.top) {
+                    this.context.lineTo(domain[1], this.drawRegion.top);
+                }
+            }
+
         this.context.restore();
 
         this._renderLine(params);
