@@ -166,6 +166,9 @@ class MathML {
             case 'tan':
                 this._assertChildren(node, 2);
                 return ((x) => Math.tan(args[0](x)));
+            case 'abs':
+                this._assertChildren(node, 2);
+                return ((x) => Math.abs(args[0](x)));
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }

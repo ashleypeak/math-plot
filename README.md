@@ -119,10 +119,11 @@ The following `<apply>` functions are implemented:
 | `<times>` | |
 | `<divide>` | |
 | `<power>` | |
-| `<root>` | `<apply>` element is required. |
+| `<root>` | `<degree>` element is required. |
 | `<sin>` | |
 | `<cos>` | |
 | `<tan>` | |
+| `<abs>` | |
 
 #### Plotting lines: `<math-plot-line>`
 
