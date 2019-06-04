@@ -73,9 +73,11 @@ Ideally, it should allow you to intuitively type a number, but here are some exa
 
 **Note:** The main limitation is that floats are **not** accepted. You must input a fraction instead.
 
-##### MathML `<list>`
+##### MathML and MathML `<list>`
 
-The range attributes can also be provided as a MathML `<list>` element. The notation for `(0, 2pi)`, for instance, would be:
+Many numbers in `math-plot` can be provided using MathML. Although support for elements is not vast, it should include most commonly-used elements.
+
+In particular, the range attributes can be provided as a MathML `<list>` element. The notation for `(0, 2pi)`, for instance, would be:
 
 ```xml
 <list>
@@ -166,10 +168,10 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-text>` el
 | Attribute | Value                | Default    | Description                  |
 | --------- | -------------------- | ---------- | ---------------------------- |
 | text      | String               | *Required* | The string or character to be rendered. |
-| top*      | Int                  | *None*     | The vertical position of the text, in coordinate units. |
-| bottom*   | Int                  | *None*     | The vertical position of the text, in coordinate units. |
-| left*     | Int                  | *None*     | The horizontal position of the text, in coordinate units. |
-| right*    | Int                  | *None*     | The horizontal position of the text, in coordinate units. |
+| top*      | Rational* or MathML* | *None*     | The vertical position of the text, in coordinate units. |
+| bottom*   | Rational* or MathML* | *None*     | The vertical position of the text, in coordinate units. |
+| left*     | Rational* or MathML* | *None*     | The horizontal position of the text, in coordinate units. |
+| right*    | Rational* or MathML* | *None*     | The horizontal position of the text, in coordinate units. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 
 ##### Text position

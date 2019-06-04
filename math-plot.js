@@ -699,6 +699,38 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Given a string describing a number, either as a Rational or a MathML
+     * term, return an equivalent int/float.
+     *
+     * The term can, as described, either be a given as a Rational:
+     *     "2pi"
+     * or as MathML:
+     *     "<apply><times/><cn>2</cn><pi/></apply>"
+     *
+     * The return will be an int/float:
+     *     6.283
+     *
+     * @param  {String}    numStr  The string representation of the number
+     * @return {Int|Float}         An equivalent int/float
+     */
+    _parseNumber(numStr) {
+        numStr = numStr.trim();
+        if(numStr[0] == '<') {
+            let numMathML = new MathML(numStr);
+
+            //since a range shouldn't have any unknowns in it, it shouldn't
+            //matter what argument you pass exec(). Just pass something because
+            //all MathML functions are built to expect an x value
+            var num = numMathML.exec(0);
+        } else {
+            var num = new Rational(numStr);
+            num = num.approx;
+        }
+
+        return num;
+    }
+
+    /**
      * Initialise all object properties which can be derived from provided
      * attributes (or defaults).
      *
@@ -930,15 +962,15 @@ class MathPlot extends HTMLElement {
         let pos = {}
 
         if(top !== null) {
-            pos.top = parseInt(top);
+            pos.top = this._parseNumber(top);
         } else if(bottom !== null) {
-            pos.bottom = parseInt(bottom);
+            pos.bottom = this._parseNumber(bottom);
         }
 
         if(left !== null) {
-            pos.left = parseInt(left);
+            pos.left = this._parseNumber(left);
         } else if(right !== null) {
-            pos.right = parseInt(right);
+            pos.right = this._parseNumber(right);
         }
 
         this.plotText(params, text, pos);
