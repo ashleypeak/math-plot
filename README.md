@@ -133,7 +133,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line>` el
 | --------- | -------------------- | ---------- | --------------------------------------- |
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | A point that the line will run through. |
-| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| color     | CSS color descriptor | #000000    | The color of the line. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 
 #### Plotting line segments: `<math-plot-line-segment>`
@@ -145,10 +145,22 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-line-sgme
 | point-a   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | point-b   | Rational pair* or MathML `<list>`* | *Required* | One end of the line segment. |
 | label     | String               | *None*     | A text label for the line segment. Will be written beside or above the line segment. |
-| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| color     | CSS color descriptor | #000000    | The color of the line segment. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
 
 **Note:** The logic for positioning the label is not sophisticated. If unsatisfactory, use the `<math-plot-text>` element instead.
+
+#### Plotting asymptotes: `<math-plot-asymptote>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-asymtote>` element will one or both arguments `x-intercept` or `y-intercept`. With one, it will plot a vertical or horizontal asymptote running through that intercept. With both, it will plot a slanted asymptote running through both.
+
+A `<math-plot-asymptote>` element cannot take the `dashed` attribute as an asymptote is by default dashed.
+
+| Attribute | Value                | Default    | Description                  |
+| --------- | -------------------- | ---------- | ---------------------------- |
+| x-intercept | Rational* or MathML* | *None*     | The x intercept of the asymptote. |
+| y-intercept | Rational* or MathML* | *None*     | The y intercept of the asymptote. |
+| color     | CSS color descriptor | #000000    | The color of the asymptote. |
 
 #### Plotting points: `<math-plot-point>`
 
@@ -158,7 +170,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-point>` e
 | --------- | -------------------- | ---------- | ---------------------------- |
 | position  | Rational pair* or MathML `<list>`* | *Required* | The position of the point to be marked. |
 | label     | String               | *None*     | A text label for the point. |
-| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| color     | CSS color descriptor | #000000    | The color of the point. |
 
 **Note:** The logic for positioning the label is not sophisticated. In fact, it's just placed below and to the right of the point, with no consideration for collision. If unsatisfactory, use the `<math-plot-text>` element instead.
 
@@ -173,7 +185,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-text>` el
 | bottom*   | Rational* or MathML* | *None*     | The vertical position of the text, in coordinate units. |
 | left*     | Rational* or MathML* | *None*     | The horizontal position of the text, in coordinate units. |
 | right*    | Rational* or MathML* | *None*     | The horizontal position of the text, in coordinate units. |
-| color     | CSS color descriptor | #000000    | The color of the plotted function. |
+| color     | CSS color descriptor | #000000    | The color of the text. |
 
 ##### Text position
 

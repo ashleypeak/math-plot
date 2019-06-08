@@ -846,6 +846,9 @@ class MathPlot extends HTMLElement {
                 case 'line-segment':
                     this._plotLineSegmentElement(child);
                     break;
+                case 'asymptote':
+                    this._plotAsymptoteElement(child);
+                    break;
                 case 'point':
                     this._plotPointElement(child);
                     break;
@@ -928,6 +931,40 @@ class MathPlot extends HTMLElement {
             '<math-plot-line-segment> The two points cannot be the same.');
 
         this.plotLineSegment(params, pointA, pointB, label);
+    }
+
+    /**
+     * Given a <math-plot-asymptote> element, plot the asymptote described
+     * 
+     * @param  {HTMLElement} el The <math-plot-asymptote> element
+     */
+    _plotAsymptoteElement(el) {
+        let xIntercept = el.getAttribute('x-intercept');
+        let yIntercept = el.getAttribute('y-intercept');
+        let params = this._getParams(el);
+
+        // asymptotes are automatically dashed
+        params.lineDash = [10, 5];
+
+        if(xIntercept !== null && yIntercept !== null) {
+            let xInt = this._parseNumber(xIntercept);
+            let yInt = this._parseNumber(yIntercept);
+
+            let rise = -yInt;
+            let run = xInt;
+            let m = rise / run;
+
+            let func = (x => m * x + yInt);
+            this.plotFunction(params, func);
+        } else if(xIntercept !== null) {
+            let int = this._parseNumber(xIntercept);
+
+            this.plotVerticalLine(params, int);
+        } else if(yIntercept !== null) {
+            let int = this._parseNumber(yIntercept);
+
+            this.plotHorizontalLine(params, int);
+        }
     }
 
     /**
@@ -1286,6 +1323,26 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Given a y intercept `y`, plot a horizontal line running from left to
+     * right of the graph.
+     * 
+     * @param  {Object} params Line parameters, @see _renderLine
+     * @param  {Number} y      The y intercept of the line
+     */
+    plotHorizontalLine(params, y) {
+        this.context.save();
+            this.context.translate(this.center.x, this.center.y);
+            this.context.scale(this.scale.x, this.scale.y);
+            
+            this.context.beginPath();
+            this.context.moveTo(this.drawRegion.left, y);
+            this.context.lineTo(this.drawRegion.right, y);
+        this.context.restore();
+        
+        this._renderLine(params);
+    }
+
+    /**
      * Given two points (each an array of two numbers [x, y]) plot a line
      * segment between them.
      * If `label` !== null, write the label as well. Note that the logic
@@ -1498,6 +1555,20 @@ class MathPlotLineSegment extends HTMLElement {
 
 
 /**
+ * Defines an asymptote to be plotted on the MathPlot canvas.
+ * @see  MathPlotFunction
+ */
+class MathPlotAsymptote extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
+/**
  * Defines a point to be plotted on the MathPlot canvas.
  * @see  MathPlotFunction
  */
@@ -1529,5 +1600,6 @@ customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
 customElements.define(TAGNAME + '-line', MathPlotLine);
 customElements.define(TAGNAME + '-line-segment', MathPlotLineSegment);
+customElements.define(TAGNAME + '-asymptote', MathPlotAsymptote);
 customElements.define(TAGNAME + '-point', MathPlotPoint);
 customElements.define(TAGNAME + '-text', MathPlotText);
