@@ -1,14 +1,39 @@
+// The name of the WebComponent element tag (and the prefix to the subelement
+// tag names)
 const TAGNAME = 'math-plot';
+
+// The default size, in pixels, of the gutters (the part of the graph which is
+// plotted despite being outside the stated range, so the graph doesn't stop
+// abruptly)
+const GUTTER_LEFT = 30;
+const GUTTER_RIGHT = 30;
+const GUTTER_TOP = 20;
+const GUTTER_BOTTOM = 20;
+
+// The radius, in pixels, of a <math-plot-point>
 const POINTRADIUS = 3;
+
+// The space reserved, in pixels, for the axis labels (the 'x' and 'y' text)
 const LABELWIDTH = 15;
 const LABELHEIGHT = 21;
+
+// The size, in pixels, of the arrows at the top/right of the axes
+const AXIS_ARROW_LENGTH = 10;
+
 const FONTSIZE = 17;
+
+// The (default) minimum space, in pixels, between two axis markers
 const MINSTEPSIZE = 40;
+
+// The default properties of all canvas lines (used for functions, asymptotes,
+// etc.)
 const DEFAULT_PLOT_PARAMETERS = {
     lineWidth: 2,
     color: '#000000',
     lineDash: []
 };
+
+// The template used to build the <math-plot> WebComponent's ShadowRoot
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
     <canvas id='canvas' class='canvas'></canvas>
@@ -626,10 +651,10 @@ class MathPlot extends HTMLElement {
         }
 
         this.gutter = {
-            left: parseInt(this.getAttribute('gutter-left')) || 20,
-            right: parseInt(this.getAttribute('gutter-right')) || 20,
-            top: parseInt(this.getAttribute('gutter-top')) || 20,
-            bottom: parseInt(this.getAttribute('gutter-bottom')) || 20
+            left: parseInt(this.getAttribute('gutter-left')) || GUTTER_LEFT,
+            right: parseInt(this.getAttribute('gutter-right')) || GUTTER_RIGHT,
+            top: parseInt(this.getAttribute('gutter-top')) || GUTTER_TOP,
+            bottom: parseInt(this.getAttribute('gutter-bottom')) || GUTTER_BOTTOM
         }
     }
 
@@ -765,8 +790,8 @@ class MathPlot extends HTMLElement {
         //bounded in graph coords by this.range)
         this.main = {
             left: this.gutter.left,
-            right: this.width - this.gutter.right - drawLabelWidth,
-            top: this.gutter.top + drawLabelHeight,
+            right: this.width - this.gutter.right - AXIS_ARROW_LENGTH - drawLabelWidth,
+            top: this.gutter.top + AXIS_ARROW_LENGTH + drawLabelHeight,
             bottom: this.height - this.gutter.bottom
         }
         this.main.width = this.main.right - this.main.left;
@@ -791,23 +816,14 @@ class MathPlot extends HTMLElement {
         this.stepX = this.stepX || this._getStepSize('x');
         this.stepY = this.stepY || this._getStepSize('y');
 
-        //the size, in graph coords, of the drawRegion (see below)
-        let drawRangeX = this.range.x.size *
-            ((this.main.width + this.gutter.left + this.gutter.right) /
-                this.main.width);
-        let drawRangeY = this.range.y.size *
-            ((this.main.height + this.gutter.top + this.gutter.bottom) /
-                this.main.height);
-
-        //the size of each axis' gutters in graph coords
-        let gutterRangeX = (drawRangeX - this.range.x.size);
-        let gutterRangeY = (drawRangeY - this.range.y.size);
-
         //the size of each gutter in graph coords
-        let gutterLeft = gutterRangeX * (this.gutter.left / (this.gutter.left + this.gutter.right));
-        let gutterRight = gutterRangeX * (this.gutter.right / (this.gutter.left + this.gutter.right));
-        let gutterTop = gutterRangeY * (this.gutter.top / (this.gutter.top + this.gutter.bottom));
-        let gutterBottom = gutterRangeY * (this.gutter.bottom / (this.gutter.top + this.gutter.bottom));
+        let gutterLeft = this.gutter.left / this.unitSize.x;
+        let gutterRight = this.gutter.right / this.unitSize.x;
+        let gutterTop = this.gutter.top / this.unitSize.y;
+        let gutterBottom = this.gutter.bottom / this.unitSize.y;
+
+        let arrowWidth = AXIS_ARROW_LENGTH / this.unitSize.x;
+        let arrowHeight = AXIS_ARROW_LENGTH / this.unitSize.y;
 
         //the area that needs to be plotted (main and gutters) in graph coords
         this.drawRegion = {
@@ -821,8 +837,8 @@ class MathPlot extends HTMLElement {
 
         //one unit of graph units, in canvas coords (pixels)
         this.scale = {
-            x: (this.width - drawLabelWidth) / this.drawRegion.width,
-            y: -(this.height - drawLabelHeight) / this.drawRegion.height
+            x: (this.width - drawLabelWidth - AXIS_ARROW_LENGTH) / this.drawRegion.width,
+            y: -(this.height - drawLabelHeight - AXIS_ARROW_LENGTH) / this.drawRegion.height
         }
     }
 
@@ -1057,26 +1073,20 @@ class MathPlot extends HTMLElement {
             let labelPosX = this.center.x - (labelWidth / 2);
             this.context.fillText('y', labelPosX, labelPosY);
 
-            this._drawLine(this.center.x, LABELHEIGHT + 10, this.center.x,
+            this._drawLine(this.center.x, LABELHEIGHT + AXIS_ARROW_LENGTH, this.center.x,
                 this.height, 2);
 
             this.context.beginPath();
             this.context.lineWidth = 1;
             this.context.moveTo(this.center.x, LABELHEIGHT);
-            this.context.lineTo(this.center.x + 5, LABELHEIGHT + 10);
-            this.context.lineTo(this.center.x - 5, LABELHEIGHT + 10);
+            this.context.lineTo(this.center.x + 5, LABELHEIGHT + AXIS_ARROW_LENGTH);
+            this.context.lineTo(this.center.x - 5, LABELHEIGHT + AXIS_ARROW_LENGTH);
             this.context.fill();
 
             if(this.drawYUnits) {
-                //don't draw unit markings over the 10px arrowhead at the top
-                //of the y axis (or in the same region at the bottom for good
-                //measure).
-                let drawTop = this.drawRegion.top + 10 / this.scale.y;
-                let drawBottom = this.drawRegion.bottom - 10 / this.scale.y;
-
                 let stepSize = this.stepY;
-                let i = stepSize.times(Math.ceil(drawBottom / stepSize.approx));
-                for(; i.lessThan(drawTop); i = i.plus(stepSize)) {
+                let i = stepSize.times(Math.ceil(this.drawRegion.bottom / stepSize.approx));
+                for(; i.lessThan(this.drawRegion.top); i = i.plus(stepSize)) {
                     if(!(i.equal(0))) {
                         let yPos = this.center.y - i.approx * this.unitSize.y;
 
@@ -1103,26 +1113,20 @@ class MathPlot extends HTMLElement {
             let labelPosX = this.width - (LABELWIDTH / 2) - (labelWidth / 2);
             this.context.fillText('x', labelPosX, labelPosY);
 
-            this._drawLine(0, this.center.y, this.width - LABELWIDTH - 10, this.center.y, 2);
+            this._drawLine(0, this.center.y, this.width - LABELWIDTH - AXIS_ARROW_LENGTH, this.center.y, 2);
 
             this.context.beginPath();
             this.context.lineWidth = 1;
             this.context.moveTo(this.width - LABELWIDTH, this.center.y);
-            this.context.lineTo(this.width - LABELWIDTH - 10, this.center.y + 5);
-            this.context.lineTo(this.width - LABELWIDTH - 10, this.center.y - 5);
+            this.context.lineTo(this.width - LABELWIDTH - AXIS_ARROW_LENGTH, this.center.y + 5);
+            this.context.lineTo(this.width - LABELWIDTH - AXIS_ARROW_LENGTH, this.center.y - 5);
             this.context.fill();
 
             if(this.drawXUnits) {
-                //don't draw unit markings over the 10px arrowhead at the right
-                //of the x axis (or in the same region at the left for good
-                //measure).
-                let drawLeft = this.drawRegion.left + 10 / this.scale.x;
-                let drawRight = this.drawRegion.right - 10 / this.scale.x;
-
                 let stepSize = this.stepX;
                 let xMin = this.range.x.min
-                let i = stepSize.times(Math.ceil(drawLeft / stepSize.approx));
-                for(; i.lessThan(drawRight); i = i.plus(stepSize)) {
+                let i = stepSize.times(Math.ceil(this.drawRegion.left / stepSize.approx));
+                for(; i.lessThan(this.drawRegion.right); i = i.plus(stepSize)) {
                     if(!(i.equal(0))) {
                         let xPos = this.center.x + i.approx * this.unitSize.x;
 
