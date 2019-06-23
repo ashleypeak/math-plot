@@ -15,11 +15,26 @@ function rat(numerator, denominator, piFactor) {
     return new Rational(numerator, denominator, piFactor);
 }
 
-test('basics', () => {
+test('construct-int-int', function() {
     expect(rat(1, 2).approx).toEqual(0.5);
+})
+
+test('construct-str-str', function() {
     expect(rat("1", "2").approx).toEqual(0.5);
+})
+
+test('construct-int-int-pi', function() {
     expect(rat(1, 2, 1).approx).toEqual(Math.PI / 2);
+})
+
+test('construct-pi-int', function() {
     expect(rat("pi", 2).approx).toEqual(Math.PI / 2);
+})
+
+test('construct-str-parse', function() {
     expect(rat("pi/2").approx).toEqual(Math.PI / 2);
+})
+
+test('construct-float', function() {
     expect(rat(0.5).approx).toEqual(0.5);
 });
