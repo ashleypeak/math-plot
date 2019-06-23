@@ -15,5 +15,7 @@ function mathml(str) {
 }
 
 test('basics', () => {
-    expect(mathml('<cn>1</cn>').rational).toStrictEqual(new Rational(2));
+    expect(mathml('<cn>2</cn>').rational).toStrictEqual(new Rational(2));
+    expect(mathml('<cn>-2</cn>').rational).toStrictEqual(new Rational(-2));
+    expect(mathml('<cn>0.5</cn>').rational).toStrictEqual(new Rational(1, 2));
 });

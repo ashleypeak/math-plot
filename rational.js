@@ -31,8 +31,11 @@ class Rational {
      *     new Rational(1, 2, 1)    // => pi/2
      *     new Rational("pi", 2)    // => pi/2
      *     new Rational("pi/2")     // => pi/2
+     *     new Rational(0.5)       // => 1/2
      * pi is also strictly supported in the denominator, but that can't be used
      * for anything useful at the moment.
+     * using a float argument is supported, but will only work if the mantissa
+     * is <= 9 figures long
      *
      * piFactor allows the Rational to be multiplied by some power of pi.
      * Necessary because axes sometimes need to be multiples of pi. It's poorly
@@ -56,6 +59,16 @@ class Rational {
             if(matches !== null) {
                 [numerator, denominator] = matches.slice(1);
             }
+        }
+
+        // if numerator is a float
+        if(Number(numerator) === numerator && numerator % 1 !== 0) {
+            let rounded = Math.round(numerator * 1000000000) / 1000000000;
+            let mantissaLength = rounded.toString().split('.')[1].length;
+            let mult = Math.pow(10, mantissaLength);
+
+            numerator = rounded * mult;
+            denominator = mult;
         }
 
         let num = this._parseInput(numerator);

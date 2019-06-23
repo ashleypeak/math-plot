@@ -77,9 +77,7 @@ class MathML {
      *                    MathML string used to constuct this object.
      */
     get rational() {
-        return new Rational(2);
-        // return this._root;
-        // return this._parseNodeToRational(this.root);
+        return this._parseNodeToRational(this._root);
     }
 
     /**
@@ -87,9 +85,9 @@ class MathML {
      * described action.
      *
      * @see constructor
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
+     * @param  {Element}   node Any MathML node
+     * @return {Function}       A function performing the action described by
+     *                          `node`
      */
     _parseNodeToFunction(node) {
         switch(node.tagName) {
@@ -122,9 +120,9 @@ class MathML {
      * the <apply> action.
      *
      * @see parseNodeToFunction
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
+     * @param  {Element}   node A MathML <apply> node
+     * @return {Function}       A function performing the action described by
+     *                          `node`
      */
     _parseApplyToFunction(node) {
         assert(node.childElementCount >= 2, "<apply> must have at least two children.")
@@ -173,6 +171,97 @@ class MathML {
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }
+    }
+
+    /**
+     * Parse any MathML node, returning a Rational which represents the same
+     * number
+     *
+     * @see constructor
+     * @param  {Element}   node Any MathML node
+     * @return {Rational}       An equivalent Rational
+     */
+    _parseNodeToRational(node) {
+        switch(node.tagName) {
+            // case 'apply':
+            //     return this._parseApplyToFunction(node);
+            // case 'ci':
+            //     assert(node.textContent === 'x', '<ci> can only take \'x\' in <math-plot>.')
+
+            //     return (x => x);
+            case 'cn':
+                assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
+
+                return new Rational(parseFloat(node.textContent));
+            // case 'degree':
+            //     return this._parseNodeToFunction(node.firstChild);
+            // case 'pi':
+            //     return (x => Math.PI);
+            // case 'list':
+            //     let elementNodes = Array.from(node.children);
+            //     let elements = elementNodes.map(this._parseNodeToFunction, this);
+
+            //     return (x => elements.reduce((a, e) => a.concat([e(x)]), []));
+            default:
+                throw new Error('Unknown MathML element: ' + node.tagName);
+        }
+    }
+
+    /**
+     * Parse an <apply> MathML node, returning a Rational which represents the
+     * same number
+     *
+     * @see parseNodeToRational
+     * @param  {Element}   node A MathML <apply> node
+     * @return {Rational}       An equivalent Rational
+     */
+    _parseApplyToRational(node) {
+        // assert(node.childElementCount >= 2, "<apply> must have at least two children.")
+
+        // let action = node.firstChild.tagName;
+        // let argNodes = Array.from(node.children).slice(1);
+        // let args = argNodes.map(this._parseNodeToFunction, this);
+
+        // switch(action) {
+        //     case 'plus':
+        //         this._assertChildren(node, 3);
+        //         return ((x) => args[0](x) + args[1](x));
+        //     case 'minus':
+        //         assert(node.childElementCount === 2 || node.childElementCount === 3,
+        //             '<apply><minus/> must have 2 or 3 children.');
+
+        //         if(node.childElementCount === 3) {
+        //             return ((x) => args[0](x) - args[1](x));
+        //         } else {
+        //             return ((x) => -args[0](x));
+        //         }
+        //     case 'times':
+        //         this._assertChildren(node, 3);
+        //         return ((x) => args[0](x) * args[1](x));
+        //     case 'divide':
+        //         this._assertChildren(node, 3);
+        //         return ((x) => args[0](x) / args[1](x));
+        //     case 'power':
+        //         this._assertChildren(node, 3);
+        //         return ((x) => args[0](x) ** args[1](x));
+        //     case 'root':
+        //         this._assertChildren(node, 3);
+        //         return ((x) => args[1](x) ** (1 / args[0](x)));
+        //     case 'sin':
+        //         this._assertChildren(node, 2);
+        //         return ((x) => Math.sin(args[0](x)));
+        //     case 'cos':
+        //         this._assertChildren(node, 2);
+        //         return ((x) => Math.cos(args[0](x)));
+        //     case 'tan':
+        //         this._assertChildren(node, 2);
+        //         return ((x) => Math.tan(args[0](x)));
+        //     case 'abs':
+        //         this._assertChildren(node, 2);
+        //         return ((x) => Math.abs(args[0](x)));
+        //     default:
+        //         throw new Error('Unknown <apply> action: ' + action);
+        // }
     }
 
     /**

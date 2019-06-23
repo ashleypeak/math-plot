@@ -69,8 +69,6 @@ class MathPlot extends HTMLElement {
      * @constructs
      */
     constructor() {
-        let asdf = new MathML("<cn>2</cn>");
-        console.log(asdf.rational)
         super();
 
         this.attachShadow({mode: 'open'});
