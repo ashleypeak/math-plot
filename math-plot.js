@@ -1,3 +1,6 @@
+import Rational from './rational.js';
+import MathML from './mathml.js';
+
 // The name of the WebComponent element tag (and the prefix to the subelement
 // tag names)
 const TAGNAME = 'math-plot';
@@ -54,544 +57,6 @@ function assert(condition, message) {
 }
 
 
-class MathML {
-    /**
-     * @constructs
-     *
-     * This class is constructed with a MathML string, which is transformed
-     * into a function performing the operation described by the MathML. This
-     * function will be stored as this._func, and executed using this.exec().
-     *
-     * Usage:
-     *     let mathml = new MathML('<apply><times/><pi/><ci>x</ci></apply>');
-     *     console.log(mathml.exec(2)); // => 6.283...
-     *
-     * Note specifically:
-     *  - x is the only <ci> allowed in the MathML string.
-     *  - this._func() is a function of the form func(x) which will apply
-     *    the described action. e.g.:
-     *        <apply><power/><ci>x</ci><cn>2</cn></apply> will result in:
-     *        ((x) => x**2)
-     *  - MathML can be arbitrarily complex, but must have exactly one
-     *    root-level node.
-     * 
-     * NOTE: Due to limitations on composing functions recursively, the actual
-     *       function returned isn't as simple as suggested above, although it
-     *       has the same net effect. Highly complex functions may be costly
-     *       to run.
-     * 
-     * @param  {String}   mathml A MathML <apply> node
-     */
-    constructor(mathml) {
-        let parser = new DOMParser();
-        let doc = parser.parseFromString(mathml, 'text/xml');
-        let root = doc.firstChild;
-
-        this._func = this._parseMathMLNode(root);
-    }
-
-    /**
-     * Get the function performing the action described by the MathML string.
-     *
-     * Although phrased as a get (and it is one), because it returns a function
-     * it can be used to execute the MathML operation. So it can be used e.g.:
-     *
-     *     let mathml = new MathML('<apply><times/><pi/><ci>x</ci></apply>');
-     *     console.log(mathml.exec(2)); // => 6.283...
-     * 
-     * @return {Function} The function described by the MathML string used to
-     *                    constuct this object.
-     */
-    get exec() {
-        return this._func
-    }
-
-    /**
-     * Parse any MathML node, returning a function which will perform the
-     * described action.
-     *
-     * @see constructor
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
-     */
-    _parseMathMLNode(node) {
-        switch(node.tagName) {
-            case 'apply':
-                return this._parseMathMLApply(node);
-            case 'ci':
-                assert(node.textContent === 'x', '<ci> can only take \'x\' in <' + TAGNAME + '>.')
-
-                return (x => x);
-            case 'cn':
-                assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
-
-                return (x => parseFloat(node.textContent));
-            case 'degree':
-                return this._parseMathMLNode(node.firstChild);
-            case 'pi':
-                return (x => Math.PI);
-            case 'list':
-                let elementNodes = Array.from(node.children);
-                let elements = elementNodes.map(this._parseMathMLNode, this);
-
-                return (x => elements.reduce((a, e) => a.concat([e(x)]), []));
-            default:
-                throw new Error('Unknown MathML element: ' + node.tagName);
-        }
-    }
-
-    /**
-     * Parse an <apply> MathML node, returning a function which will perform
-     * the <apply> action.
-     *
-     * @see parseMathML
-     * @param  {String}   node A MathML <apply> node
-     * @return {Function}      A function performing the action described by
-     *                         `node`
-     */
-    _parseMathMLApply(node) {
-        assert(node.childElementCount >= 2, "<apply> must have at least two children.")
-
-        let action = node.firstChild.tagName;
-        let argNodes = Array.from(node.children).slice(1);
-        let args = argNodes.map(this._parseMathMLNode, this);
-
-        switch(action) {
-            case 'plus':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) + args[1](x));
-            case 'minus':
-                assert(node.childElementCount === 2 || node.childElementCount === 3,
-                    '<apply><minus/> must have 2 or 3 children.');
-
-                if(node.childElementCount === 3) {
-                    return ((x) => args[0](x) - args[1](x));
-                } else {
-                    return ((x) => -args[0](x));
-                }
-            case 'times':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) * args[1](x));
-            case 'divide':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) / args[1](x));
-            case 'power':
-                this._assertChildren(node, 3);
-                return ((x) => args[0](x) ** args[1](x));
-            case 'root':
-                this._assertChildren(node, 3);
-                return ((x) => args[1](x) ** (1 / args[0](x)));
-            case 'sin':
-                this._assertChildren(node, 2);
-                return ((x) => Math.sin(args[0](x)));
-            case 'cos':
-                this._assertChildren(node, 2);
-                return ((x) => Math.cos(args[0](x)));
-            case 'tan':
-                this._assertChildren(node, 2);
-                return ((x) => Math.tan(args[0](x)));
-            case 'abs':
-                this._assertChildren(node, 2);
-                return ((x) => Math.abs(args[0](x)));
-            default:
-                throw new Error('Unknown <apply> action: ' + action);
-        }
-    }
-
-    /**
-     * Given a MathML node, assert that it has exactly `count` children, or
-     * else raise an error.
-     * 
-     * @param  {Element} node  The MathML node whose children are being counted
-     * @param  {Number}  count The expected number of children
-     */
-    _assertChildren(node, count) {
-        let action = node.firstChild.tagName;
-        assert(node.childElementCount === count,
-            `<apply><${action}/> must have ${count-1} children.`);
-    }
-}
-
-
-/**
- * A class for manipulating rational numbers. Stored as a pair of integers
- * numerator and denominator.
- */
-class Rational {
-    /**
-     * Creates a new Rational, a rational number. Numerator and denominator
-     * must both be integers, though denominator is optional.
-     *
-     * Rationals can be created with a number of syntaxes:
-     *     new Rational(1, 2)       // => 1/2
-     *     new Rational("1", "2")   // => 1/2
-     *     new Rational(1, 2, 1)    // => pi/2
-     *     new Rational("pi", 2)    // => pi/2
-     *     new Rational("pi/2")     // => pi/2
-     * pi is also strictly supported in the denominator, but that can't be used
-     * for anything useful at the moment.
-     *
-     * piFactor allows the Rational to be multiplied by some power of pi.
-     * Necessary because axes sometimes need to be multiples of pi. It's poorly
-     * supported and probably a bit overengineered, but I preferred a genuine
-     * representation of the number to a kludge for allowing pi multiples for
-     * units.
-     * 
-     * @constructs
-     * @param  {Number|String} numerator   The numerator of the rational
-     * @param  {Number|String} denominator The denominator of the rational
-     * @param  {Number} piFactor           Rational multiplied by pi^piFactor
-     * @return {Rational}                  A new Rational object
-     */
-    constructor(numerator, denominator=1, piFactor=0) {
-        //must go first because numerator/denominator can alter it
-        this.piFactor = piFactor;
-
-        //e.g. new Rational("1/2")
-        if(typeof numerator === 'string') {
-            let matches = numerator.match(/^(.+)\/(.+)$/);
-            if(matches !== null) {
-                [numerator, denominator] = matches.slice(1);
-            }
-        }
-
-        let num = this._parseInput(numerator);
-        this.numerator = num.mult;
-        this.piFactor += num.pi;
-
-        let denom = this._parseInput(denominator);
-        this.denominator = denom.mult;
-        this.piFactor -= denom.pi;
-
-        this.simplify();
-    }
-
-    /**
-     * Given a number in one of the formats described below, return an Object
-     * of the form {mult:..., pi:...}, where `mult` is an INT, the non-pi
-     * value of the number, and `pi` is an INT, the multiplicity of pi (always
-     * 1 or 0).
-     *
-     * Formats:
-     *     int:    e.g. 1
-     *     string: e.g. "1" | "1.3" | "-pi" | "-2pi"
-     * 
-     * 
-     * @param  {Number|String} number The number to be processed
-     * @return {Object}               The parsed number, described above
-     */
-    _parseInput(number) {
-        if(typeof number === 'number') {
-            assert(number === parseInt(number), 'Invalid number:' + number);
-
-            return {mult: number, pi: 0};
-        } else if(typeof number === 'string') {
-            assert(number !== '', 'Invalid number:' + number)
-            let pattern = /^(-)?([0-9]+)?(pi)?$/
-            let matches = number.match(pattern);
-            assert(matches !== null, 'Invalid number:' + number);
-
-            let [neg, multStr, piStr] = matches.slice(1);
-            let mult = typeof multStr !== 'undefined' ? parseInt(multStr) : 1;
-            let pi = typeof piStr !== 'undefined' ? 1 : 0;
-
-            if(typeof neg !== 'undefined') {
-                mult *= -1;
-            }
-
-            return {mult: mult, pi: pi};
-        } else {
-            throw new Error('Invalid number:' + number);
-        }
-    }
-
-
-    /** GETTERS AND SETTERS */
-
-    /**
-     * Returns a floating-point approximation of the Rational.
-     * 
-     * @return {Number} A floating-point approximation
-     */
-    get approx() {
-        return (this.numerator * Math.PI**this.piFactor) / this.denominator;
-    }
-
-    /** OPERATORS */
-
-    /**
-     * Adds an integer or Rational to this Rational. Returns the sum, but does
-     * not mutate this object.
-     * 
-     * @param  {Number|Rational} number The number to be added
-     * @return {Rational}               The sum of the two numbers
-     */
-    plus(number) {
-        if(!(number instanceof Rational)) {
-            number = new Rational(number);
-        }
-
-        if(this.piFactor !== number.piFactor) {
-            throw new Error('Adding of numbers with different pi factors not supported.')
-        }
-
-        let ret = new Rational(
-            this.numerator * number.denominator + number.numerator * this.denominator,
-            this.denominator * number.denominator,
-            this.piFactor);
-
-        ret.simplify();
-        return ret;
-    }
-
-    /**
-     * Subtracts an integer or Rational from this Rational. Returns the result,
-     * but does not mutate this object.
-     * 
-     * @param  {Number|Rational} number The number to be subtracted
-     * @return {Rational}               The result fo the subtraction
-     */
-    minus(number) {
-        if(!(number instanceof Rational)) {
-            number = new Rational(number);
-        }
-
-        if(this.piFactor !== number.piFactor) {
-            throw new Error('Subtracting of numbers with different pi factors not supported.')
-        }
-
-        let ret = new Rational(
-            this.numerator * number.denominator - number.numerator * this.denominator,
-            this.denominator * number.denominator,
-            this.piFactor);
-
-        ret.simplify();
-        return ret;
-    }
-
-    /**
-     * Multiplies an integer or Rational to this Rational. Returns the product,
-     * but does not mutate this object.
-     * 
-     * @param  {Number|Rational} number The number to be multiplied
-     * @return {Rational}               The product of the two numbers
-     */
-    times(number) {
-        if(!(number instanceof Rational)) {
-            number = new Rational(number);
-        }
-
-        let ret = new Rational(
-            this.numerator * number.numerator,
-            this.denominator * number.denominator,
-            this.piFactor + number.piFactor);
-
-        ret.simplify();
-        return ret;
-    }
-
-    /**
-     * Divides this Rational by an integer or a Rational. Returns the result,
-     * but does not mutate this object.
-     * 
-     * @param  {Number|Rational} number The number to be divided by
-     * @return {Rational}               The product of the two numbers
-     */
-    divide(number) {
-        if(!(number instanceof Rational)) {
-            number = new Rational(number);
-        }
-
-        let ret = new Rational(
-            this.numerator * number.denominator,
-            this.denominator * number.numerator,
-            this.piFactor - number.piFactor);
-
-        ret.simplify();
-        return ret;
-    }
-
-    /**
-     * Tests if `this` is equal to `number`.
-     * 
-     * @param  {Number|Rational} number The number to be compared
-     * @return {Boolean}                True if `this` = `number`
-     */
-    equal(number) {
-        if(!(number instanceof Rational)) {
-            number = new Rational(number);
-        }
-
-        return (this.numerator == number.numerator &&
-            this.denominator == number.denominator &&
-            (this.piFactor == number.piFactor || this.numerator == 0));
-    }
-
-    /**
-     * Tests if `this` is greater than `number`.
-     * 
-     * @param  {Number|Rational} number The number to be compared
-     * @return {Boolean}                True if `this` > `number`
-     */
-    greaterThan(number) {
-        if(number instanceof Rational) {
-            number = number.approx
-        }
-
-        return this.approx > number;
-    }
-
-    /**
-     * Tests if `this` is less than `number`.
-     * 
-     * @param  {Number|Rational} number The number to be compared
-     * @return {Boolean}                True if `this` < `number`
-     */
-    lessThan(number) {
-        if(number instanceof Rational) {
-            number = number.approx;
-        }
-
-        return this.approx < number;
-    }
-
-
-    /** MISCELLANEOUS */
-
-    /**
-     * Ensures numerator and denominator are coprime, and denominator is not
-     * negative. Returns nothing.
-     */
-    simplify() {
-        let gcd = this._gcd(this.numerator, this.denominator);
-
-        this.numerator /= gcd;
-        this.denominator /= gcd;
-
-        if(this.denominator < 0) {
-            this.numerator *= -1;
-            this.denominator = Math.abs(this.denominator);
-        }
-    }
-
-    /**
-     * Find the greatest common divisor of _integers_ `a` and `b`.
-     * 
-     * @param  {Number} a An integer
-     * @param  {Number} b An integer
-     * @return {Number}   The GCD of `a` and `b`
-     */
-    _gcd(a, b) {
-        if(!b) {
-            return a;
-        }
-
-        return this._gcd(b, a % b);
-    }
-
-    /**
-     * Draw the Rational on the canvas at the position described by `position`.
-     * 
-     * - `position` must define top, and may define either left or right.
-     * - `areFractions` is used by the x axis labels, and if true indicates
-     *   that some of the labels are fractions. If true, it draws integral
-     *   labels slightly lower so they line up with the fractional labels.
-     * 
-     * @param  {CanvasRenderingContext2D} context The rendering anvas' context
-     * @param  {Object}  position     The position to draw the number
-     * @param  {Boolean} areFractions Are any of the other labels on the axis
-     *                                fractions?
-     */
-    draw(context, position, areFractions=false) {
-        let numLabel = Math.abs(this.numerator).toString();
-        if(this.piFactor === 1) {
-            numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
-        }
-
-        if(this.denominator === 1) {
-            var width = context.measureText(numLabel).width;
-        } else {
-            var denomLabel = this.denominator.toString();
-
-            var numWidth = context.measureText(numLabel).width;
-            var denomWidth = context.measureText(denomLabel).width;
-
-            var width = Math.max(numWidth, denomWidth);
-        }
-
-        //we need left and top to draw
-        if(position.hasOwnProperty('left')) {
-            var left = position.left + 5;
-        } else if(position.hasOwnProperty('right')) {
-            var left = position.right - width - 5;
-        } else {
-            throw new Error('Position must have either left or right defined.');
-        }
-
-        if(position.hasOwnProperty('top')) {
-            var top = !areFractions ? position.top : position.top - 3;
-        } else {
-            throw new Error('Position must have top defined.');
-        }
-
-        if(this.denominator === 1) {
-            let posX = left;
-            let posY = top + FONTSIZE;
-
-            if(areFractions) {
-                posY += FONTSIZE / 2;
-            }
-
-            context.fillText(numLabel, posX, posY);
-        } else {
-            let posX = left + (width - numWidth) / 2;
-            let posY = top + FONTSIZE;
-            context.fillText(numLabel, posX, posY);
-
-            posX = left + (width - denomWidth) / 2;
-            posY = top + 2 * FONTSIZE;
-            context.fillText(denomLabel, posX, posY);
-
-            context.beginPath();
-            context.lineWidth = 1;
-            context.moveTo(left - 2, top + FONTSIZE + 3);
-            context.lineTo(left + width + 2, top + FONTSIZE + 3);
-            context.stroke();
-        }
-
-        //draw negative sign
-        let signRight = this.denominator === 1 ? left - 3 : left - 6;
-        if(this.numerator < 0) {
-            context.beginPath();
-            context.lineWidth = 1;
-            if(areFractions) {
-                context.moveTo(signRight - 5, top + FONTSIZE + 3);
-                context.lineTo(signRight, top + FONTSIZE + 3);
-            } else {
-                context.moveTo(signRight - 5, top + FONTSIZE / 2 + 3);
-                context.lineTo(signRight, top + FONTSIZE / 2 + 3);
-            }
-            context.stroke();
-        }
-    }
-
-    /**
-     * Given a tuple of the form "(a, b, ...)", return an array of Rationals
-     * 
-     * @param  {String} tuple A string representation of the tuple of rationals
-     * @return {Array}        The parsed tuple
-     */
-    static parseTuple(tuple) {
-        tuple = tuple.replace(/\s/g, '');
-        assert(/^\([^(),]+(,[^(),]+)*\)$/.test(tuple), "Invalid tuple provided.");
-
-        let matches = tuple.slice(1, -1).split(',');
-        return matches.map(el => new Rational(el));
-    }
-}
-
-
 /**
  * The MathPlot is a canvas element which plots graphs of mathematical
  * functions
@@ -604,6 +69,8 @@ class MathPlot extends HTMLElement {
      * @constructs
      */
     constructor() {
+        let asdf = new MathML("<cn>2</cn>");
+        console.log(asdf.rational)
         super();
 
         this.attachShadow({mode: 'open'});
@@ -728,6 +195,36 @@ class MathPlot extends HTMLElement {
 
     /**
      * Given a string describing a number, either as a Rational or a MathML
+     * term, return the equivalent Rational
+     *
+     * The term can, as described, either be a given as a Rational:
+     *     "2pi"
+     * or as MathML:
+     *     "<apply><times/><cn>2</cn><pi/></apply>"
+     *
+     * The return will be a Rational:
+     *     Rational("2pi")
+     *
+     * @param  {String}    numStr  The string representation of the number
+     * @return {Rational}          An equivalent Rational
+     */
+    _parseNumberToRational(numStr) {
+        numStr = numStr.trim();
+        if(numStr[0] == '<') {
+            let numMathML = new MathML(numStr);
+
+            //since a range shouldn't have any unknowns in it, it shouldn't
+            //matter what argument you pass exec(). Just pass something because
+            //all MathML functions are built to expect an x value
+            let num = numMathML.exec(0);
+            return num;
+        } else {
+            return new Rational(numStr);
+        }
+    }
+
+    /**
+     * Given a string describing a number, either as a Rational or a MathML
      * term, return an equivalent int/float.
      *
      * The term can, as described, either be a given as a Rational:
@@ -741,7 +238,7 @@ class MathPlot extends HTMLElement {
      * @param  {String}    numStr  The string representation of the number
      * @return {Int|Float}         An equivalent int/float
      */
-    _parseNumber(numStr) {
+    _parseNumberToApprox(numStr) {
         numStr = numStr.trim();
         if(numStr[0] == '<') {
             let numMathML = new MathML(numStr);
@@ -963,8 +460,8 @@ class MathPlot extends HTMLElement {
         params.lineDash = [10, 5];
 
         if(xIntercept !== null && yIntercept !== null) {
-            let xInt = this._parseNumber(xIntercept);
-            let yInt = this._parseNumber(yIntercept);
+            let xInt = this._parseNumberToApprox(xIntercept);
+            let yInt = this._parseNumberToApprox(yIntercept);
 
             let rise = -yInt;
             let run = xInt;
@@ -973,11 +470,11 @@ class MathPlot extends HTMLElement {
             let func = (x => m * x + yInt);
             this.plotFunction(params, func);
         } else if(xIntercept !== null) {
-            let int = this._parseNumber(xIntercept);
+            let int = this._parseNumberToApprox(xIntercept);
 
             this.plotVerticalLine(params, int);
         } else if(yIntercept !== null) {
-            let int = this._parseNumber(yIntercept);
+            let int = this._parseNumberToApprox(yIntercept);
 
             this.plotHorizontalLine(params, int);
         }
@@ -1018,15 +515,15 @@ class MathPlot extends HTMLElement {
         let pos = {}
 
         if(top !== null) {
-            pos.top = this._parseNumber(top);
+            pos.top = this._parseNumberToApprox(top);
         } else if(bottom !== null) {
-            pos.bottom = this._parseNumber(bottom);
+            pos.bottom = this._parseNumberToApprox(bottom);
         }
 
         if(left !== null) {
-            pos.left = this._parseNumber(left);
+            pos.left = this._parseNumberToApprox(left);
         } else if(right !== null) {
-            pos.right = this._parseNumber(right);
+            pos.right = this._parseNumberToApprox(right);
         }
 
         this.plotText(params, text, pos);

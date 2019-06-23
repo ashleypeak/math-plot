@@ -6,7 +6,13 @@ This component defines the `<math-plot>` element, which will plot a cartesian pl
 
 ## Installation
 
-The component is contained in a single JavaScript file, `math-plot.js`. Simply download it into your project folder.
+The component is contained in three JavaScript files, `math-plot.js`, `mathml.js` and `rational.js`. Simply download them into your project folder, ensuring that they are all in the same directory.
+
+## Testing (for development)
+
+Testing is handled by Jest testing framework. To install the required dependencies, run `yarn install` in the project directory.
+
+To execute the tests, run `yarn test`.
 
 ## Usage
 
