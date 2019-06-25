@@ -104,9 +104,9 @@ class MathPlot extends HTMLElement {
         //overrides the default unit-marking step sizes
         //if not set, will be defined after unitSize in _initDerivedProperties()
         this.stepX = this.getAttribute('step-x') ?
-            new Rational(this.getAttribute('step-x')) : null;
+            this._parseNumberToRational(this.getAttribute('step-x')) : null;
         this.stepY = this.getAttribute('step-y') ?
-            new Rational(this.getAttribute('step-y')) : null;
+            this._parseNumberToRational(this.getAttribute('step-y')) : null;
         this.drawXUnits = this.getAttribute('hide-x-units') !== null ? false : true;
         this.drawYUnits = this.getAttribute('hide-y-units') !== null ? false : true;
 
@@ -211,11 +211,7 @@ class MathPlot extends HTMLElement {
         if(numStr[0] == '<') {
             let numMathML = new MathML(numStr);
 
-            //since a range shouldn't have any unknowns in it, it shouldn't
-            //matter what argument you pass exec(). Just pass something because
-            //all MathML functions are built to expect an x value
-            let num = numMathML.exec(0);
-            return num;
+            return numMathML.rational;
         } else {
             return new Rational(numStr);
         }

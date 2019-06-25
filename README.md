@@ -50,8 +50,8 @@ The `<math-plot>` element will create a canvas, and draw a cartesian plane on it
 | hide-x-axis   | *No value*     | -            | Don't render the x axis. |
 | hide-y-axis   | *No value*     | -            | Don't render the y axis. |
 | pi-units      | *No value*     | -            | Mark the x axis in multiples of π, e.g. for plotting circular functions. |
-| step-x        | Rational*      | *Calculated* | The distance between unit markers on the x axis. |
-| step-y        | Rational*      | *Calculated* | The distance between unit markers on the y axis. |
+| step-x        | Rational* or MathML* | *Calculated* | The distance between unit markers on the x axis. |
+| step-y        | Rational* or MathML* | *Calculated* | The distance between unit markers on the y axis. |
 | hide-x-units  | *No value*     | -            | Don't show unit markers on the x axis. |
 | hide-y-units  | *No value*     | -            | Don't show unit markers on the y axis. |
 | range-x       | Rational pair* or MathML `<list>`* | (-10, 10)    | The x values between which the plane will be plotted. |
