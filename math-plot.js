@@ -1,4 +1,4 @@
-import Rational from './rational.js';
+import {Rational, RationalTuple} from './rational.js';
 import MathML from './mathml.js';
 
 // The name of the WebComponent element tag (and the prefix to the subelement
@@ -139,7 +139,7 @@ class MathPlot extends HTMLElement {
      * @return {Object}          The calculated range, in ints/floats
      */
     _parseRange(rangeStr) {
-        let rangeList = this._parseList(rangeStr)
+        let rangeList = this._parseListToApprox(rangeStr)
 
         assert(
             rangeList.length == 2 &&
@@ -174,7 +174,7 @@ class MathPlot extends HTMLElement {
      * @param  {String} listStr The string representation of the list
      * @return {Array}          An equivalent array of ints/floats
      */
-    _parseList(listStr) {
+    _parseListToApprox(listStr) {
         listStr = listStr.trim();
         if(listStr.length >= 6 && listStr.slice(0, 6) == '<list>') {
             let listMathML = new MathML(listStr);
@@ -184,8 +184,9 @@ class MathPlot extends HTMLElement {
             //all MathML functions are built to expect an x value
             var list = listMathML.exec(0);
         } else {
-            var list =
-                Rational.parseTuple(listStr).map(el => el.approx);
+            let listRational = new RationalTuple(listStr);
+
+            var list = listRational.approx;
         }
 
         return list;
@@ -378,7 +379,7 @@ class MathPlot extends HTMLElement {
         let params = this._getParams(el);
 
         if(domain !== null) {
-            domain = this._parseList(domain);
+            domain = this._parseListToApprox(domain);
 
             domain[0] = Math.max(domain[0], this.drawRegion.left);
             domain[1] = Math.min(domain[1], this.drawRegion.right);
@@ -398,8 +399,8 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-line> element
      */
     _plotLineElement(el) {
-        let pointA = this._parseList(el.getAttribute('point-a'));
-        let pointB = this._parseList(el.getAttribute('point-b'));
+        let pointA = this._parseListToApprox(el.getAttribute('point-a'));
+        let pointB = this._parseListToApprox(el.getAttribute('point-b'));
         let params = this._getParams(el);
 
         assert(pointA.length === 2 && pointB.length === 2,
@@ -426,8 +427,8 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-line-segment> element
      */
     _plotLineSegmentElement(el) {
-        let pointA = this._parseList(el.getAttribute('point-a'));
-        let pointB = this._parseList(el.getAttribute('point-b'));
+        let pointA = this._parseListToApprox(el.getAttribute('point-a'));
+        let pointB = this._parseListToApprox(el.getAttribute('point-b'));
         let label = el.getAttribute('label');
         let params = this._getParams(el);
 
@@ -480,7 +481,7 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-point> element
      */
     _plotPointElement(el) {
-        let pos = this._parseList(el.getAttribute('position'));
+        let pos = this._parseListToApprox(el.getAttribute('position'));
         let label = el.getAttribute('label');
         let params = this._getParams(el);
 

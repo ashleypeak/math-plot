@@ -25,6 +25,11 @@ class Rational {
      * Creates a new Rational, a rational number. Numerator and denominator
      * must both be integers, though denominator is optional.
      *
+     * NOTE: This class doesn't actually implement rationals, it implements
+     * rationals with a multiple of pi:
+     *     (a/b)*(pi^c)    a, b, c \in Z
+     * It should be renamed but I don't know what to rename it to.
+     *
      * Rationals can be created with a number of syntaxes:
      *     new Rational(1, 2)       // => 1/2
      *     new Rational("1", "2")   // => 1/2
@@ -390,20 +395,48 @@ class Rational {
             context.stroke();
         }
     }
+}
 
+
+/**
+ * A class for manipulating tuples of rational numbers.
+ *
+ * @see Rational
+ */
+class RationalTuple {
     /**
-     * Given a tuple of the form "(a, b, ...)", return an array of Rationals
+     * Creates a new RationalTuple, a tuple of rational numbers (implemented as
+     * an array of class Rational).
+     *
+     * Takes a tuple `tuple` of the form "(a, b, ...)" as its only argument.
+     * e.g.:
+     *     "(1/2, pi, 3pi)"
+     *
+     * @see  Rational
      * 
+     * @constructs
      * @param  {String} tuple A string representation of the tuple of rationals
-     * @return {Array}        The parsed tuple
+     * @return {RationalTuple}  A new RationalTuple object
      */
-    static parseTuple(tuple) {
+    constructor(tuple) {
         tuple = tuple.replace(/\s/g, '');
         assert(/^\([^(),]+(,[^(),]+)*\)$/.test(tuple), "Invalid tuple provided.");
 
         let matches = tuple.slice(1, -1).split(',');
-        return matches.map(el => new Rational(el));
+        this.tuple = matches.map(el => new Rational(el));
+    }
+
+    /** GETTERS AND SETTERS */
+
+    /**
+     * Returns an array of floating-point approximations of the Rationals in
+     * the tuple.
+     *
+     * @return {Array} An array of floating-point approximations
+     */
+    get approx() {
+        return this.tuple.map(rat => rat.approx);
     }
 }
 
-export default Rational;
+export {Rational, RationalTuple};

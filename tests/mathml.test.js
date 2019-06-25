@@ -1,4 +1,4 @@
-import Rational from '../rational.js';
+import {Rational} from '../rational.js';
 import MathML from '../mathml.js';
 
 

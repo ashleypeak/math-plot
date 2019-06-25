@@ -1,4 +1,4 @@
-import Rational from './rational.js';
+import {Rational} from './rational.js';
 
 /**
  * Assert that `condition` is true. If it is not, raise an error with
