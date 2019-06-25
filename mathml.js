@@ -1,4 +1,4 @@
-import {Rational} from './rational.js';
+import {Rational, RationalTuple} from './rational.js';
 
 /**
  * Assert that `condition` is true. If it is not, raise an error with
@@ -82,8 +82,10 @@ class MathML {
      * Note that this will only work if the number described is in fact of a
      * form supported by the Rational class.
      * 
-     * @return {Rational} An equivalent Rational to the number described by the
-     *                    MathML string used to constuct this object.
+     * @return {Rational|RationalTuple}  An equivalent Rational to the number
+     *                                   (or RationalTuple to the list)
+     *                                   described by the MathML string used to
+     *                                   constuct this object.
      */
     get rational() {
         return this._parseNodeToRational(this._root);
@@ -202,11 +204,11 @@ class MathML {
             //     return this._parseNodeToRational(node.firstChild);
             case 'pi':
                 return new Rational(1, 1, 1);
-            // case 'list':
-            //     let elementNodes = Array.from(node.children);
-            //     let elements = elementNodes.map(this._parseNodeToRational, this);
+            case 'list':
+                let elementNodes = Array.from(node.children);
+                let elements = elementNodes.map(this._parseNodeToRational, this);
 
-            //     return (x => elements.reduce((a, e) => a.concat([e(x)]), []));
+                return new RationalTuple(elements);
             default:
                 throw new Error('Unknown MathML element: ' + node.tagName);
         }

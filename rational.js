@@ -408,22 +408,30 @@ class RationalTuple {
      * Creates a new RationalTuple, a tuple of rational numbers (implemented as
      * an array of class Rational).
      *
-     * Takes a tuple `tuple` of the form "(a, b, ...)" as its only argument.
-     * e.g.:
-     *     "(1/2, pi, 3pi)"
+     * Takes as its only argument either:
+     *     - a string `tuple` of the form "(a, b, ...)" as its only argument.
+     *       e.g.:
+     *           "(1/2, pi, 3pi)"
+     *     - an array of Rationals
      *
      * @see  Rational
      * 
      * @constructs
-     * @param  {String} tuple A string representation of the tuple of rationals
+     * @param  {String|Array}   tuple  A string representation of the tuple of
+     *                                 rationals, or an array of Rationals
      * @return {RationalTuple}  A new RationalTuple object
      */
     constructor(tuple) {
-        tuple = tuple.replace(/\s/g, '');
-        assert(/^\([^(),]+(,[^(),]+)*\)$/.test(tuple), "Invalid tuple provided.");
+        if(Array.isArray(tuple)) {
+            this._tuple = tuple;
+        } else {
+            tuple = tuple.replace(/\s/g, '');
+            assert(/^\([^(),]+(,[^(),]+)*\)$/.test(tuple),
+                   "Invalid tuple provided.");
 
-        let matches = tuple.slice(1, -1).split(',');
-        this.tuple = matches.map(el => new Rational(el));
+            let matches = tuple.slice(1, -1).split(',');
+            this._tuple = matches.map(el => new Rational(el));
+        }
     }
 
     /** GETTERS AND SETTERS */
@@ -435,7 +443,7 @@ class RationalTuple {
      * @return {Array} An array of floating-point approximations
      */
     get approx() {
-        return this.tuple.map(rat => rat.approx);
+        return this._tuple.map(rat => rat.approx);
     }
 }
 
