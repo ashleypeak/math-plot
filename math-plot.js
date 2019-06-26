@@ -86,6 +86,7 @@ class MathPlot extends HTMLElement {
 
         //initialise context
         this.context.font = FONTSIZE + 'px serif';
+        this.context.textBaseline = 'top';
     }
 
     /**
@@ -156,8 +157,38 @@ class MathPlot extends HTMLElement {
     }
 
     /**
-     * Given a string describing a list, either as a tuple of Rationals or a
-     * MathML <list>, return an equivalent array of ints/floats.
+     * Given a string describing a list, either as a tuple of Rational
+     * descriptions or a MathML <list>, return a RationalTuple
+     *
+     * The list can, as described, either be a given as a tuple of Rationals:
+     *     "(0, 1, 2pi)"
+     * or as a MathML <list>:
+     *     "<list>
+     *         <cn>0</cn>
+     *         <cn>1</cn>
+     *         <apply><times/><cn>2</cn><pi/></apply>
+     *      </list>"
+     *
+     * @param  {String}         listStr The string representation of the list
+     * @return {RationalTuple}          An equivalent RationalTuple
+     */
+    _parseListToRational(listStr) {
+        listStr = listStr.trim();
+        if(listStr.length >= 6 && listStr.slice(0, 6) == '<list>') {
+            let listMathML = new MathML(listStr);
+
+            return listMathML.rational;
+        } else {
+            return new RationalTuple(listStr);
+        }
+
+        return list;
+    }
+
+    /**
+     * Given a string describing a list, either as a tuple of Rational
+     * descriptions or a MathML <list>, return an equivalent array of
+     * ints/floats.
      *
      * The list can, as described, either be a given as a tuple of Rationals:
      *     "(0, 1, 2pi)"
@@ -182,14 +213,12 @@ class MathPlot extends HTMLElement {
             //since a range shouldn't have any unknowns in it, it shouldn't
             //matter what argument you pass exec(). Just pass something because
             //all MathML functions are built to expect an x value
-            var list = listMathML.exec(0);
+            return listMathML.exec(0);
         } else {
             let listRational = new RationalTuple(listStr);
 
-            var list = listRational.approx;
+            return listRational.approx;
         }
-
-        return list;
     }
 
     /**
@@ -481,14 +510,21 @@ class MathPlot extends HTMLElement {
      * @param  {HTMLElement} el The <math-plot-point> element
      */
     _plotPointElement(el) {
-        let pos = this._parseListToApprox(el.getAttribute('position'));
-        let label = el.getAttribute('label');
+        let pos = this._parseListToRational(el.getAttribute('position'));
+
+        let label = null;
+        if(el.getAttribute('label') !== null) {
+            label = {type: 'text', value: el.getAttribute('label')};
+        } else if (el.getAttribute('label-coordinates') !== null) {
+            label = {type: 'coordinates', tuple: pos};
+        }
+
         let params = this._getParams(el);
 
         assert(pos.length === 2,
             '<math-plot-point> Invalid position provided.');
 
-        this.plotPoint(params, pos, label);
+        this.plotPoint(params, pos.approx, label);
     }
 
     /**
@@ -561,7 +597,7 @@ class MathPlot extends HTMLElement {
             let labelWidth = this.context.measureText('y').width;
 
             //has to be fudged to look right
-            let labelPosY = FONTSIZE * 4/5;
+            let labelPosY = 0;
             let labelPosX = this.center.x - (labelWidth / 2);
             this.context.fillText('y', labelPosX, labelPosY);
 
@@ -601,7 +637,7 @@ class MathPlot extends HTMLElement {
             let labelWidth = this.context.measureText('x').width;
 
             //has to be fudged to look right
-            let labelPosY = this.center.y + FONTSIZE / 3;
+            let labelPosY = this.center.y - FONTSIZE / 2;
             let labelPosX = this.width - (LABELWIDTH / 2) - (labelWidth / 2);
             this.context.fillText('x', labelPosX, labelPosY);
 
@@ -916,9 +952,19 @@ class MathPlot extends HTMLElement {
         this.context.fill();
 
         if(label !== null) {
-            let position = {left: pos[0], top: pos[1]};
+            let positionPixels = {left: pos[0], top: pos[1]};
+            let positionCanvas = {left: pos[0]*this.scale.x + this.center.x,
+                                  top: pos[1]*this.scale.y + this.center.y};
 
-            this._renderText(params, label, position);
+            switch(label.type) {
+                case 'text':
+                    this._renderText(params, label.value, positionPixels);
+                    break;
+                case 'coordinates':
+                    label.tuple.draw(this.context, positionCanvas,
+                                     params.color);
+                    break;
+            }
         }
     }
 
@@ -969,29 +1015,28 @@ class MathPlot extends HTMLElement {
         let scaledWidth = width / this.scale.x;
         let scaledFontSize = FONTSIZE / this.scale.y;
 
-        //padding from left and bottom, since they otherwise sit too close to
-        //the line segments
-        let scaledLeftPad = 3 / this.scale.x;
-        let scaledBottomPad = 3 / this.scale.y;
+        // horizontal padding, since text otherwise sits too close to the line
+        // segments
+        let scaledXPad = 3 / this.scale.x;
 
         let bottom = null;
         if(pos.hasOwnProperty('top')) {
-            bottom = pos.top + scaledFontSize;
+            bottom = pos.top;
         } else if(pos.hasOwnProperty('centerY')) {
-            bottom = pos.centerY + scaledFontSize / 2;
+            bottom = pos.centerY - scaledFontSize / 2;
         } else if(pos.hasOwnProperty('bottom')) {
-            bottom = pos.bottom - scaledBottomPad;
+            bottom = pos.bottom - scaledFontSize;
         } else {
             throw new Error('_renderText: pos requires a vertical position.')
         }
 
         let left = null;
         if(pos.hasOwnProperty('left')) {
-            left = pos.left + scaledLeftPad;
+            left = pos.left + scaledXPad;
         } else if(pos.hasOwnProperty('centerX')) {
             left = pos.centerX - scaledWidth / 2;
         } else if(pos.hasOwnProperty('right')) {
-            left = pos.right - scaledWidth;
+            left = pos.right - scaledWidth - scaledXPad;
         } else {
             throw new Error('_renderText: pos requires a horizontal position.')
         }

@@ -1,5 +1,12 @@
 const FONTSIZE = 17;
 
+// drawing right at the edge of a space looks off, pad a little
+const DRAW_X_OFFSET = 3;
+const DRAW_Y_OFFSET = 3;
+const DRAW_MINUS_WIDTH = 5;
+const DRAW_MINUS_SEPARATION = 3;
+const DRAW_TUPLE_PADDING = 5;
+
 /**
  * Assert that `condition` is true. If it is not, raise an error with
  * message `message`.
@@ -311,6 +318,49 @@ class Rational {
     }
 
     /**
+     * Get the width of the Rational when drawn on a canvas `context`
+     * 
+     * @param  {CanvasRenderingContext2D} context The rendering canvas' context
+     * @return {Number}                           The width of the Rational, in
+     *                                            canvas dimensions
+     */
+    getDrawWidth(context) {
+        let numLabel = Math.abs(this.numerator).toString();
+        if(this.piFactor === 1) {
+            numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
+        }
+
+        let minusPadding = this.lessThan(0) ?
+                               DRAW_MINUS_WIDTH + DRAW_MINUS_SEPARATION : 0;
+
+        if(this.denominator === 1) {
+            return context.measureText(numLabel).width + minusPadding;
+        } else {
+            let denomLabel = this.denominator.toString();
+
+            let numWidth = context.measureText(numLabel).width;
+            let denomWidth = context.measureText(denomLabel).width;
+
+            return Math.max(numWidth, denomWidth) + minusPadding;
+        }
+    }
+
+    /**
+     * Get the height of the Rational when drawn on a canvas `context`
+     * 
+     * @param  {CanvasRenderingContext2D} context The rendering canvas' context
+     * @return {Number}                           The height of the Rational,
+     *                                            in canvas dimensions
+     */
+    getDrawHeight(context) {
+        if(this.denominator === 1) {
+            return FONTSIZE;
+        } else {
+            return FONTSIZE * 2;
+        }
+    }
+
+    /**
      * Draw the Rational on the canvas at the position described by `position`.
      * 
      * - `position` must define top, and may define either left or right.
@@ -318,46 +368,56 @@ class Rational {
      *   that some of the labels are fractions. If true, it draws integral
      *   labels slightly lower so they line up with the fractional labels.
      * 
-     * @param  {CanvasRenderingContext2D} context The rendering anvas' context
+     * @param  {CanvasRenderingContext2D} context The rendering canvas' context
      * @param  {Object}  position     The position to draw the number
      * @param  {Boolean} areFractions Are any of the other labels on the axis
      *                                fractions?
+     * @param  {String}  color        The color to draw the number
      */
-    draw(context, position, areFractions=false) {
+    draw(context, position, areFractions=false, color='#000000') {
+        context.fillStyle = color;
+        context.strokeStyle = color;
+
         let numLabel = Math.abs(this.numerator).toString();
         if(this.piFactor === 1) {
             numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
         }
+        let denomLabel = this.denominator.toString();
 
-        if(this.denominator === 1) {
-            var width = context.measureText(numLabel).width;
-        } else {
-            var denomLabel = this.denominator.toString();
+        let numWidth = context.measureText(numLabel).width;
+        let denomWidth = context.measureText(denomLabel).width;
 
-            var numWidth = context.measureText(numLabel).width;
-            var denomWidth = context.measureText(denomLabel).width;
-
-            var width = Math.max(numWidth, denomWidth);
-        }
+        let width = this.getDrawWidth(context);
+        // the width of the fraction without the negative sign
+        let fracWidth = this.lessThan(0) ?
+            width - DRAW_MINUS_WIDTH - DRAW_MINUS_SEPARATION : width;
 
         //we need left and top to draw
         if(position.hasOwnProperty('left')) {
-            var left = position.left + 5;
+            var left = position.left + DRAW_X_OFFSET;
         } else if(position.hasOwnProperty('right')) {
-            var left = position.right - width - 5;
+            var left = position.right - width - DRAW_X_OFFSET;
         } else {
             throw new Error('Position must have either left or right defined.');
         }
 
+        // the numbers in a negative need to be drawn further to the right to
+        // leave space for the negative sign. So that positives and negatives
+        // can be handled by the same code, if the number is negative shift the
+        // `left` position by the size of the negative sign.
+        if(this.lessThan(0)) {
+            left += DRAW_MINUS_WIDTH + DRAW_MINUS_SEPARATION
+        }
+
         if(position.hasOwnProperty('top')) {
-            var top = !areFractions ? position.top : position.top - 3;
+            var top = position.top;
         } else {
             throw new Error('Position must have top defined.');
         }
 
         if(this.denominator === 1) {
             let posX = left;
-            let posY = top + FONTSIZE;
+            let posY = top;
 
             if(areFractions) {
                 posY += FONTSIZE / 2;
@@ -365,32 +425,32 @@ class Rational {
 
             context.fillText(numLabel, posX, posY);
         } else {
-            let posX = left + (width - numWidth) / 2;
-            let posY = top + FONTSIZE;
+            let posX = left + (fracWidth - numWidth) / 2;
+            let posY = top;
             context.fillText(numLabel, posX, posY);
 
-            posX = left + (width - denomWidth) / 2;
-            posY = top + 2 * FONTSIZE;
+            posX = left + (fracWidth - denomWidth) / 2;
+            posY = top + FONTSIZE;
             context.fillText(denomLabel, posX, posY);
 
             context.beginPath();
             context.lineWidth = 1;
-            context.moveTo(left - 2, top + FONTSIZE + 3);
-            context.lineTo(left + width + 2, top + FONTSIZE + 3);
+            context.moveTo(left, top + FONTSIZE);
+            context.lineTo(left + fracWidth, top + FONTSIZE);
             context.stroke();
         }
 
         //draw negative sign
-        let signRight = this.denominator === 1 ? left - 3 : left - 6;
+        let signRight =  left - DRAW_MINUS_SEPARATION;
         if(this.numerator < 0) {
             context.beginPath();
             context.lineWidth = 1;
-            if(areFractions) {
-                context.moveTo(signRight - 5, top + FONTSIZE + 3);
-                context.lineTo(signRight, top + FONTSIZE + 3);
+            if(areFractions || this.denominator !== 1) {
+                context.moveTo(signRight - DRAW_MINUS_WIDTH, top + FONTSIZE);
+                context.lineTo(signRight, top + FONTSIZE);
             } else {
-                context.moveTo(signRight - 5, top + FONTSIZE / 2 + 3);
-                context.lineTo(signRight, top + FONTSIZE / 2 + 3);
+                context.moveTo(signRight - DRAW_MINUS_WIDTH, top + FONTSIZE / 2);
+                context.lineTo(signRight, top + FONTSIZE / 2);
             }
             context.stroke();
         }
@@ -444,6 +504,89 @@ class RationalTuple {
      */
     get approx() {
         return this._tuple.map(rat => rat.approx);
+    }
+
+    /**
+     * Returns the length of `_tuple`, which is the number of elements in the
+     * tuple.
+     * 
+     * @return {Number} The number of Rationals in the tuple
+     */
+    get length() {
+        return this._tuple.length
+    }
+
+    /** MISCELLANEOUS */
+
+    /**
+     * Draw the text `content`, at size `fontsize`, on the canvas context
+     * `context`.
+     *
+     * Returns an updated `position` object, so the next element can be drawn
+     * in the right place.
+     *
+     * @see  draw()
+     * 
+     * @param  {CanvasRenderingContext2D} context  The rendering canvas'
+     *                                             context
+     * @param  {Object}                   position The position to draw
+     *                                             `content`
+     * @param  {Number}                   fontsize The font size to draw
+     *                                             `content`
+     * @param  {String}                   content  The string to be drawn
+     * @return {Object}                            The new position
+     */
+    _drawAddOuterText(context, position, fontsize, content) {
+        context.font = fontsize + 'px serif';
+        context.fillText(content, position.left, position.top);
+
+        position.left += context.measureText(content).width;
+        context.font = FONTSIZE + 'px serif';
+
+        return position;
+    }
+
+    /**
+     * Draw the RationalTuple on the canvas at the position described by
+     * `position`.
+     * 
+     * - `position` must define top, and may define either left or right.
+     * 
+     * @param  {CanvasRenderingContext2D} context   The rendering canvas'
+     *                                              context
+     * @param  {Object}                   position  The position to draw the
+     *                                              tuple
+     * @param  {String}                   color     The color of the tuple
+     */
+    draw(context, position, color='#000000') {
+        context.fillStyle = color;
+        let curLeft = position.left;
+
+        let areFractions
+            = this._tuple.filter((rat) => rat.denominator != 1).length > 0;
+
+        let rationalHeights
+            = this._tuple.map((rat) => rat.getDrawHeight(context));
+        let tupleFontsize = Math.max(...rationalHeights);
+
+        let curPos = position;
+        curPos = this._drawAddOuterText(context, position, tupleFontsize, '(');
+
+        let self = this;
+        let first = true;
+        this._tuple.forEach(function(rational) {
+            if(first) {
+                first = false;
+            } else {
+                curPos = self._drawAddOuterText(context, position,
+                                                tupleFontsize, ',');
+            }
+
+            rational.draw(context, curPos, areFractions, color);
+            curPos.left += rational.getDrawWidth(context) + DRAW_TUPLE_PADDING;
+        });
+
+        this._drawAddOuterText(context, position, tupleFontsize, ')');
     }
 }
 

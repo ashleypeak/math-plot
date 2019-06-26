@@ -176,9 +176,16 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-point>` e
 | --------- | -------------------- | ---------- | ---------------------------- |
 | position  | Rational pair* or MathML `<list>`* | *Required* | The position of the point to be marked. |
 | label     | String               | *None*     | A text label for the point. |
+| label-coordinates | *No value*   | -          | Label the point with the coordinates of the point in the form `(a, b)`. |
 | color     | CSS color descriptor | #000000    | The color of the point. |
 
-**Note:** The logic for positioning the label is not sophisticated. In fact, it's just placed below and to the right of the point, with no consideration for collision. If unsatisfactory, use the `<math-plot-text>` element instead.
+##### Position
+
+The logic for positioning the label is not sophisticated. In fact, it's just placed below and to the right of the point, with no consideration for collision. If unsatisfactory, use the `<math-plot-text>` element instead.
+
+##### Labels
+
+Only one of `label` and `label-coordinates` may be used on a single point. If both are present, `label` will be shown.
 
 #### Plotting text: `<math-plot-text>`
 
