@@ -20,6 +20,10 @@ const POINTRADIUS = 3;
 const LABELWIDTH = 15;
 const LABELHEIGHT = 21;
 
+// The space, in pixels, between the marking labels on the x axis, and the x
+// axis line itself.
+const MARKING_PADDING_TOP = 2;
+
 // The size, in pixels, of the arrows at the top/right of the axes
 const AXIS_ARROW_LENGTH = 10;
 
@@ -673,10 +677,12 @@ class MathPlot extends HTMLElement {
                         }
 
                         this._drawLine(xPos, this.center.y, xPos, this.center.y - 6, 2);
+
+                        let labelYPos = this.center.y + MARKING_PADDING_TOP;
                         if(i.greaterThan(0)) {
-                            i.draw(this.context, {top: this.center.y, left: xPos}, areFractions);
+                            i.draw(this.context, {top: labelYPos, left: xPos}, areFractions);
                         } else if(i.lessThan(0)) {
-                            i.draw(this.context, {top: this.center.y, right: xPos}, areFractions);
+                            i.draw(this.context, {top: labelYPos, right: xPos}, areFractions);
                         }
 
                         if(this.drawGrid) {
