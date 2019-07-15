@@ -204,6 +204,8 @@ class MathML {
             //     return this._parseNodeToRational(node.firstChild);
             case 'pi':
                 return new Rational(1, 1, 1);
+            case 'exponentiale':
+                return new Rational(1, 1, 0, 1);
             case 'list':
                 let elementNodes = Array.from(node.children);
                 let elements = elementNodes.map(this._parseNodeToRational, this);
