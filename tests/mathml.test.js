@@ -30,6 +30,10 @@ test('torational-pi', function() {
     expect(mathml('<pi/>').rational).toStrictEqual(new Rational("pi"));
 });
 
+test('torational-e', function() {
+    expect(mathml('<exponentiale/>').rational).toStrictEqual(new Rational("e"));
+});
+
 test('torational-plus', function() {
     expect(mathml('<apply><plus/><cn>1</cn><cn>2</cn></apply>').rational)
         .toStrictEqual(new Rational(3));

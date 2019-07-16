@@ -116,6 +116,8 @@ class MathML {
                 return this._parseNodeToFunction(node.firstChild);
             case 'pi':
                 return (x => Math.PI);
+            case 'exponentiale':
+                return (x => Math.E);
             case 'list':
                 let elementNodes = Array.from(node.children);
                 let elements = elementNodes.map(this._parseNodeToFunction, this);

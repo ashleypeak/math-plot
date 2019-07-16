@@ -63,7 +63,7 @@ The `<math-plot>` element will create a canvas, and draw a cartesian plane on it
 
 ##### Rationals and rational pairs
 
-A **Rational** is an internal class, representing a rational number, optionally multiplied by π, e.g. "pi/2".
+A **Rational** is an internal class, representing a rational number, optionally multiplied by π or e, e.g. "pi/2", "2e".
 
 A **Rational pair** is a comma-separated pair of numbers, surrounded by brackets, e.g. "(-2pi, 2pi)".
 
@@ -113,6 +113,8 @@ The following MathML elements are accepted:
 | ------- | ----- |
 | `<cn>` | Only accepts numbers parseable by `parseFloat()`. |
 | `<ci>` | Only accepts the value 'x'. |
+| `<pi>` | The constant π |
+| `<exponentiale>` | The constant e |
 | `<degree>` | |
 | `<apply>` | *See below* |
 

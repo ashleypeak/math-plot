@@ -33,8 +33,8 @@ class Rational {
      * must both be integers, though denominator is optional.
      *
      * NOTE: This class doesn't actually implement rationals, it implements
-     * rationals with a multiple of pi:
-     *     (a/b)*(pi^c)    a, b, c \in Z
+     * rationals with a multiple of pi OR a multiple of e:
+     *     (a/b)*(s^c)    a, b, c \in Z,  s \in {\pi, e}
      * It should be renamed but I don't know what to rename it to.
      *
      * Rationals can be created with a number of syntaxes:
@@ -42,10 +42,12 @@ class Rational {
      *     new Rational("1", "2")   // => 1/2
      *     new Rational(1, 2, 1)    // => pi/2
      *     new Rational("pi", 2)    // => pi/2
+     *     new Rational("e", 2)    // => e/2
      *     new Rational("pi/2")     // => pi/2
+     *     new Rational("e/2")     // => e/2
      *     new Rational(0.5)       // => 1/2
-     * pi is also strictly supported in the denominator, but that can't be used
-     * for anything useful at the moment.
+     * pi/e are also strictly supported in the denominator, but that can't be
+     * used for anything useful at the moment.
      * using a float argument is supported, but will only work if the mantissa
      * is <= 9 figures long
      *
@@ -55,15 +57,20 @@ class Rational {
      * representation of the number to a kludge for allowing pi multiples for
      * units.
      * 
+     * eFactor allows the Rational to be multiplied by some power of e.
+     * Necessary to support exponential functions.
+     * 
      * @constructs
      * @param  {Number|String} numerator   The numerator of the rational
      * @param  {Number|String} denominator The denominator of the rational
      * @param  {Number} piFactor           Rational multiplied by pi^piFactor
+     * @param  {Number} eFactor            Rational multiplied by e^eFactor
      * @return {Rational}                  A new Rational object
      */
-    constructor(numerator, denominator=1, piFactor=0) {
+    constructor(numerator, denominator=1, piFactor=0, eFactor=0) {
         //must go first because numerator/denominator can alter it
         this.piFactor = piFactor;
+        this.eFactor = eFactor;
 
         //e.g. new Rational("1/2")
         if(typeof numerator === 'string') {
@@ -86,10 +93,12 @@ class Rational {
         let num = this._parseInput(numerator);
         this.numerator = num.mult;
         this.piFactor += num.pi;
+        this.eFactor += num.e;
 
         let denom = this._parseInput(denominator);
         this.denominator = denom.mult;
         this.piFactor -= denom.pi;
+        this.eFactor -= denom.e;
 
         this.simplify();
     }
@@ -112,22 +121,31 @@ class Rational {
         if(typeof number === 'number') {
             assert(number === parseInt(number), 'Invalid number:' + number);
 
-            return {mult: number, pi: 0};
+            return {mult: number, pi: 0, e: 0};
         } else if(typeof number === 'string') {
             assert(number !== '', 'Invalid number:' + number)
-            let pattern = /^(-)?([0-9]+)?(pi)?$/
+            let pattern = /^(-)?([0-9]+)?(pi|e)?$/
             let matches = number.match(pattern);
             assert(matches !== null, 'Invalid number:' + number);
 
-            let [neg, multStr, piStr] = matches.slice(1);
+            let [neg, multStr, symbolStr] = matches.slice(1);
             let mult = typeof multStr !== 'undefined' ? parseInt(multStr) : 1;
-            let pi = typeof piStr !== 'undefined' ? 1 : 0;
+
+            let pi = 0;
+            let e = 0;
+            if(typeof symbolStr !== 'undefined') {
+                if(symbolStr === 'pi') {
+                    pi = 1;
+                } else if(symbolStr === 'e') {
+                    e = 1;
+                }
+            }
 
             if(typeof neg !== 'undefined') {
                 mult *= -1;
             }
 
-            return {mult: mult, pi: pi};
+            return {mult: mult, pi: pi, e: e};
         } else {
             throw new Error('Invalid number:' + number);
         }
@@ -142,7 +160,7 @@ class Rational {
      * @return {Number} A floating-point approximation
      */
     get approx() {
-        return (this.numerator * Math.PI**this.piFactor) / this.denominator;
+        return (this.numerator * Math.PI**this.piFactor * Math.E**this.eFactor) / this.denominator;
     }
 
     /** OPERATORS */
@@ -159,14 +177,15 @@ class Rational {
             number = new Rational(number);
         }
 
-        if(this.piFactor !== number.piFactor) {
-            throw new Error('Adding of numbers with different pi factors not supported.')
+        if(this.piFactor !== number.piFactor || this.eFactor !== number.eFactor) {
+            throw new Error('Adding of numbers with different symbol factors not supported.')
         }
 
         let ret = new Rational(
             this.numerator * number.denominator + number.numerator * this.denominator,
             this.denominator * number.denominator,
-            this.piFactor);
+            this.piFactor,
+            this.eFactor);
 
         ret.simplify();
         return ret;
@@ -184,14 +203,15 @@ class Rational {
             number = new Rational(number);
         }
 
-        if(this.piFactor !== number.piFactor) {
-            throw new Error('Subtracting of numbers with different pi factors not supported.')
+        if(this.piFactor !== number.piFactor || this.eFactor !== number.eFactor) {
+            throw new Error('Subtracting of numbers with different symbol factors not supported.')
         }
 
         let ret = new Rational(
             this.numerator * number.denominator - number.numerator * this.denominator,
             this.denominator * number.denominator,
-            this.piFactor);
+            this.piFactor,
+            this.eFactor);
 
         ret.simplify();
         return ret;
@@ -209,10 +229,20 @@ class Rational {
             number = new Rational(number);
         }
 
+        // Though this wouldn't cause any mathematical problems, numbers with
+        // both pi and e factors aren't generally supported by the class (e.g.
+        // _parseInput() won't parse both simultaneously), so best not to
+        // allow it here to save possible confusion.
+        if((this.piFactor !== 0 && number.eFactor !== 0) ||
+                (this.eFactor !== 0 && number.piFactor !== 0)) {
+            throw new Error('Multiplying of numbers with different symbols not supported.')
+        }
+
         let ret = new Rational(
             this.numerator * number.numerator,
             this.denominator * number.denominator,
-            this.piFactor + number.piFactor);
+            this.piFactor + number.piFactor,
+            this.eFactor + number.eFactor);
 
         ret.simplify();
         return ret;
@@ -230,10 +260,20 @@ class Rational {
             number = new Rational(number);
         }
 
+        // Though this wouldn't cause any mathematical problems, numbers with
+        // both pi and e factors aren't generally supported by the class (e.g.
+        // _parseInput() won't parse both simultaneously), so best not to
+        // allow it here to save possible confusion.
+        if((this.piFactor !== 0 && number.eFactor !== 0) ||
+                (this.eFactor !== 0 && number.piFactor !== 0)) {
+            throw new Error('Dividing of numbers with different symbols not supported.')
+        }
+
         let ret = new Rational(
             this.numerator * number.denominator,
             this.denominator * number.numerator,
-            this.piFactor - number.piFactor);
+            this.piFactor - number.piFactor,
+            this.eFactor - number.eFactor);
 
         ret.simplify();
         return ret;
@@ -252,7 +292,7 @@ class Rational {
 
         return (this.numerator == number.numerator &&
             this.denominator == number.denominator &&
-            (this.piFactor == number.piFactor || this.numerator == 0));
+            ((this.piFactor == number.piFactor && this.eFactor == number.eFactor) || this.numerator == 0));
     }
 
     /**
@@ -328,6 +368,8 @@ class Rational {
         let numLabel = Math.abs(this.numerator).toString();
         if(this.piFactor === 1) {
             numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
+        } else if(this.eFactor === 1) {
+            numLabel = (numLabel === '1' ? 'e' : numLabel + 'e');
         }
 
         let minusPadding = this.lessThan(0) ?
@@ -381,6 +423,8 @@ class Rational {
         let numLabel = Math.abs(this.numerator).toString();
         if(this.piFactor === 1) {
             numLabel = (numLabel === '1' ? 'π' : numLabel + 'π');
+        } else if(this.eFactor === 1) {
+            numLabel = (numLabel === '1' ? 'e' : numLabel + 'e');
         }
         let denomLabel = this.denominator.toString();
 
