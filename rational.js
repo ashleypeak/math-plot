@@ -280,6 +280,35 @@ class Rational {
     }
 
     /**
+     * Raises this Rational to the power of an integer or a Rational. Returns
+     * the result, but does not mutate this object.
+     *
+     * NOTE: The exponent must be an integer, or a Rational with denominator 1
+     *
+     * @param  {Number|Rational} number The number by which to raise `this`
+     * @return {Rational}               The resulting exponent
+     */
+    power(number) {
+        if(!(number instanceof Rational)) {
+            number = new Rational(number);
+        }
+
+        // Only raising to an integer is supported
+        if(number.denominator !== 1 || number.eFactor !== 0 || number.piFactor !== 0) {
+            throw new Error('Raising to a non-integer power is not supported.')
+        }
+
+        let ret = new Rational(
+            this.numerator ** number.numerator,
+            this.denominator ** number.numerator,
+            this.piFactor * number.numerator,
+            this.eFactor * number.numerator);
+
+        ret.simplify();
+        return ret;
+    }
+
+    /**
      * Tests if `this` is equal to `number`.
      * 
      * @param  {Number|Rational} number The number to be compared

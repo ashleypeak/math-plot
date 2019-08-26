@@ -59,6 +59,11 @@ test('torational-divide', function() {
         .toStrictEqual(new Rational(1, 2));
 });
 
+test('torational-power', function() {
+    expect(mathml('<apply><power/><cn>3</cn><cn>4</cn></apply>').rational)
+        .toStrictEqual(new Rational(81));
+});
+
 test('torational-approx', function() {
     let rationalApprox = mathml('<apply><times/><cn>2</cn><pi/></apply>')
                     .rational.approx;

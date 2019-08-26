@@ -255,6 +255,10 @@ class MathML {
                 this._assertChildren(node, 3);
 
                 return args[0].divide(args[1]);
+            case 'power':
+                this._assertChildren(node, 3);
+
+                return args[0].power(args[1]);
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }

@@ -279,6 +279,84 @@ test('divide-different-symbols', function() {
                   'supported.'));
 });
 
+test('power-int-int', function() {
+    let a = rational(3);
+    let b = rational(2);
+
+    expect(a.power(b).approx).toEqual(9);
+});
+
+test('power-int-float', function() {
+    let a = rational(3);
+    let b = rational("1/4");
+
+    expect(() => { a.power(b) }).toThrowError(
+        new Error('Raising to a non-integer power is not supported.'));
+});
+
+test('power-int-pi', function() {
+    let a = rational(3);
+    let b = rational("pi");
+
+    expect(() => { a.power(b) }).toThrowError(
+        new Error('Raising to a non-integer power is not supported.'));
+});
+
+test('power-int-e', function() {
+    let a = rational(3);
+    let b = rational("e");
+
+    expect(() => { a.power(b) }).toThrowError(
+        new Error('Raising to a non-integer power is not supported.'));
+});
+
+test('power-pi', function() {
+    let a = rational("pi");
+    let b = rational(3);
+
+    expect(a.power(b).approx).toEqual(Math.PI ** 3);
+});
+
+test('power-e', function() {
+    let a = rational("e");
+    let b = rational(3);
+
+    expect(a.power(b).approx).toEqual(Math.E ** 3);
+});
+
+test('power-raise-to-0', function() {
+    let a = rational("e");
+    let b = rational(0);
+
+    expect(a.power(b).approx).toEqual(1);
+});
+
+test('power-complex-pi', function() {
+    let a = rational("2pi").divide(rational("3"));
+    let b = rational(3);
+
+    // there are slight rounding errors, so need a more forgiving comparison
+    let round_to_10 = (x) => Math.round(1000000000 * x) / 1000000000;
+
+    let result = a.power(b).approx;
+    let correct = (8 * (Math.PI ** 3)) / 27;
+
+    expect(round_to_10(result)).toEqual(round_to_10(correct));
+});
+
+test('power-complex-e', function() {
+    let a = rational("2").divide(rational("3e"));
+    let b = rational(3);
+
+    // there are slight rounding errors, so need a more forgiving comparison
+    let round_to_10 = (x) => Math.round(1000000000 * x) / 1000000000;
+
+    let result = a.power(b).approx;
+    let correct = 8 / (27 * (Math.E ** 3));
+
+    expect(round_to_10(result)).toEqual(round_to_10(correct));
+});
+
 test('equal-int-int-true', function() {
     let a = rational(2);
     let b = rational(2);
