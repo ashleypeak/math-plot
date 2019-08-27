@@ -116,6 +116,7 @@ The following MathML elements are accepted:
 | `<pi>` | The constant π |
 | `<exponentiale>` | The constant e |
 | `<degree>` | |
+| `<logbase>` | |
 | `<apply>` | *See below* |
 
 The following `<apply>` functions are implemented:
@@ -127,11 +128,13 @@ The following `<apply>` functions are implemented:
 | `<times>` | |
 | `<divide>` | |
 | `<power>` | |
-| `<root>` | `<degree>` element is required. |
+| `<root>` | `<degree>` element is required, must be first argument. |
 | `<sin>` | |
 | `<cos>` | |
 | `<tan>` | |
 | `<abs>` | |
+| `<log>` | `<logbase>` element is optional, but if included must be first argument. If not included, defaults to 10. |
+| `<ln>` | |
 
 #### Plotting lines: `<math-plot-line>`
 

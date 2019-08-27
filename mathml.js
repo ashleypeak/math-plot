@@ -113,6 +113,7 @@ class MathML {
 
                 return (x => parseFloat(node.textContent));
             case 'degree':
+            case 'logbase':
                 return this._parseNodeToFunction(node.firstChild);
             case 'pi':
                 return (x => Math.PI);
@@ -181,6 +182,20 @@ class MathML {
             case 'abs':
                 this._assertChildren(node, 2);
                 return ((x) => Math.abs(args[0](x)));
+            case 'ln':
+                this._assertChildren(node, 2);
+                return ((x) => Math.log(args[0](x)));
+            case 'log':
+                let childCount = node.childElementCount;
+
+                assert([2, 3].includes(childCount),
+                    `<apply><log/> must have 1 or 2 children.`);
+
+                if(childCount === 2) {
+                    return ((x) => Math.log(args[0](x)) / Math.log(10));
+                } else {
+                    return ((x) => Math.log(args[1](x)) / Math.log(args[0](x)));
+                }
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }

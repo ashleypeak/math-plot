@@ -175,3 +175,37 @@ test('tofunction-abs', function() {
     expect(mathml('<apply><abs/><cn>-3</cn></apply>').exec())
         .toEqual(3);
 });
+
+test('tofunction-ln', function() {
+    let mml = mathml('<apply><ln/><cn>2</cn></apply>');
+
+    expect(approx(mml.exec(), 5)).toEqual(0.69315);
+});
+
+test('tofunction-log10', function() {
+    let mml = mathml('<apply><log/><cn>1000</cn></apply>');
+
+    // rounding errors make the equality only approximate
+    expect(approx(mml.exec(), 5)).toEqual(3);
+});
+
+test('tofunction-log-arbtrary', function() {
+    let mml = mathml(
+        '<apply><log/><logbase><cn>3</cn></logbase><cn>27</cn></apply>');
+
+    // rounding errors make the equality only approximate
+    expect(approx(mml.exec(), 5)).toEqual(3);
+});
+
+test('tofunction-log-wrongargs', function() {
+    let mmlStr = '<apply><log/><cn>1</cn><cn>1</cn><cn>1</cn></apply>';
+
+    // rounding errors make the equality only approximate
+    expect(() => mathml(mmlStr))
+        .toThrow(new Error('<apply><log/> must have 1 or 2 children.'));
+});
+
+test('tofunction-tuple', function() {
+    expect(mathml('<list><cn>3</cn><cn>4</cn></list>').exec())
+        .toStrictEqual([3, 4]);
+});
