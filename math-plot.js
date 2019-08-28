@@ -962,6 +962,26 @@ class MathPlot extends HTMLElement {
             let positionCanvas = {left: pos[0]*this.scale.x + this.center.x,
                                   top: pos[1]*this.scale.y + this.center.y};
 
+            // if point is on the x axis or at the bottom of the range, plot
+            // the label above rather than below
+            if(pos[1] == 0 || pos[1] <= this.range.y.min) {
+                positionPixels.bottom = positionPixels.top;
+                positionCanvas.bottom = positionCanvas.top;
+
+                delete positionPixels.top;
+                delete positionCanvas.top;
+            }
+
+            // if point is at the right of the range, plot the label to the
+            // left rather than below
+            if(pos[0] >= this.range.x.max) {
+                positionPixels.right = positionPixels.left;
+                positionCanvas.right = positionCanvas.left;
+
+                delete positionPixels.left;
+                delete positionCanvas.left;
+            }
+
             switch(label.type) {
                 case 'text':
                     this._renderText(params, label.value, positionPixels);

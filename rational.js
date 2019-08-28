@@ -589,6 +589,40 @@ class RationalTuple {
         return this._tuple.length
     }
 
+    /**
+     * Get the width of the RationalTuple when drawn on a canvas `context`
+     * 
+     * @param  {CanvasRenderingContext2D} context The rendering canvas' context
+     * @return {Number}                           The width of the Tuple, in
+     *                                            canvas dimensions
+     */
+    getDrawWidth(context) {
+        // Measure the width of all elements in the tuple besides the Rationals
+        // themselves
+        let rationalHeights
+            = this._tuple.map((rat) => rat.getDrawHeight(context));
+        let tupleFontsize = Math.max(...rationalHeights);
+
+        let tupleElementCount = this._tuple.length;
+        let tupleChars = '()' + ','.repeat(tupleElementCount - 1);
+
+        context.font = tupleFontsize + 'px serif';
+        let tupleCharWidth = context.measureText(tupleChars).width;
+        context.font = FONTSIZE + 'px serif';
+
+        // Measure the widths of the Rationals
+        let rationalWidths = this._tuple.map((x) => x.getDrawWidth(context));
+
+        // Measure the widths of the padding between Rationals
+        let rationalPadding = DRAW_TUPLE_PADDING * tupleElementCount;
+
+        // Sum everything together
+        let drawWidth = tupleCharWidth + rationalPadding +
+                        rationalWidths.reduce((x, y) => x + y);
+
+        return drawWidth;
+    }
+
     /** MISCELLANEOUS */
 
     /**
@@ -623,7 +657,7 @@ class RationalTuple {
      * Draw the RationalTuple on the canvas at the position described by
      * `position`.
      * 
-     * - `position` must define top, and may define either left or right.
+     * - `position` must define either top or bottom, and either left or right.
      * 
      * @param  {CanvasRenderingContext2D} context   The rendering canvas'
      *                                              context
@@ -633,7 +667,6 @@ class RationalTuple {
      */
     draw(context, position, color='#000000') {
         context.fillStyle = color;
-        let curLeft = position.left;
 
         let areFractions
             = this._tuple.filter((rat) => rat.denominator != 1).length > 0;
@@ -641,6 +674,22 @@ class RationalTuple {
         let rationalHeights
             = this._tuple.map((rat) => rat.getDrawHeight(context));
         let tupleFontsize = Math.max(...rationalHeights);
+
+        if(!('left' in position)) {
+            if('right' in position) {
+                position.left = position.right - this.getDrawWidth(context);
+            } else {
+                throw new Error('Position must have either left or right defined.');
+            }
+        }
+
+        if(!('top' in position)) {
+            if('bottom' in position) {
+                position.top = position.bottom - tupleFontsize;
+            } else {
+                throw new Error('Position must have either top or bottom defined.');
+            }
+        }
 
         let curPos = position;
         curPos = this._drawAddOuterText(context, position, tupleFontsize, '(');
