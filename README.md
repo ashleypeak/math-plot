@@ -10,9 +10,9 @@ The component is contained in three JavaScript files, `math-plot.js`, `mathml.js
 
 ## Testing (for development)
 
-Testing is handled by Jest testing framework. To install the required dependencies, run `yarn install` in the project directory.
+Testing is handled by Jest testing framework. To install the required dependencies, run `npm install` in the project directory.
 
-To execute the tests, run `yarn test`.
+To execute the tests, run `npm run test`.
 
 ## Usage
 

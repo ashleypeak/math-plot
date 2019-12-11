@@ -1,19 +1,27 @@
 {
   "name": "math-plot",
   "version": "0.1.0",
-  "description": "A WebComponent canvas for plotting mathematical functions.",
+  "description": "A WebComponent canvas for plotting mathematical functions",
   "main": "math-plot.js",
-  "repository": "https://github.com/wyattpeak/math-plot.git",
-  "author": "Wyatt Peak <wyattpeak@gmail.com>",
-  "license": "MIT",
-  "private": false,
-  "devDependencies": {
-    "@babel/core": "^7.4.5",
-    "@babel/preset-env": "^7.4.5",
-    "babel-jest": "^24.8.0",
-    "jest": "^24.8.0"
+  "directories": {
+    "test": "tests"
   },
   "scripts": {
     "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wyattpeak/math-plot.git"
+  },
+  "author": "Wyatt Peak <wyattpeak@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wyattpeak/math-plot/issues"
+  },
+  "homepage": "https://github.com/wyattpeak/math-plot#readme",
+  "devDependencies": {
+    "@babel/preset-env": "^7.7.6",
+    "babel-jest": "^24.9.0",
+    "jest": "^24.9.0"
   }
 }
