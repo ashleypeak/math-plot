@@ -23,5 +23,8 @@
     "@babel/preset-env": "^7.7.6",
     "babel-jest": "^24.9.0",
     "jest": "^24.9.0"
+  },
+  "dependencies": {
+    "@webcomponents/webcomponentsjs": "^2.4.0"
   }
 }

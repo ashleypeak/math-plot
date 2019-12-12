@@ -16,9 +16,17 @@ To execute the tests, run `npm run test`.
 
 ## Usage
 
-First include the module:
+First, install the NPM dependencies (the only dependency is a polyfill to allow WebComponent support in old browsers and Edge). In the project directory, run:
+
+```bash
+$ npm install --production
+```
+
+In the HTML file, include the polyfill and the module:
 
 ```html
+<script src="node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+
 <script type="module" src="math-plot.js"></script>
 ```
 
