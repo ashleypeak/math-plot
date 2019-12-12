@@ -44,6 +44,8 @@ That will work, but doesn't give you much context. Here's a more realistic examp
 </math-plot>
 ```
 
+Refer to `examples/basic.html` to see a more examples of graphs.
+
 ### Elements and attributes
 
 #### The main element: `<math-plot>`

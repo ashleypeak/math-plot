@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Math plot</title>
+
+        <!-- webcomponents polyfill -->
+        <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+
+        <script type="module" src="../math-plot.js"></script>
+    </head>
+    <body>
+        <math-plot width="250" height="250" range-x="(0, 2pi)" range-y="(-1, 3)" pi-units>
+            <math-plot-function rule="<apply><plus/><apply><times/><cn>2</cn><apply><sin/><apply><minus/><ci>x</ci><apply><divide/><pi/><cn>2</cn></apply></apply></apply></apply><cn>1</cn></apply>"></math-plot-function>
+
+            <math-plot-line color="#0000ff" point-a="(0, 1)" point-b="(1, 1)" dashed></math-plot-line>
+            <math-plot-line color="#0000ff" point-a="(pi/2, 0)" point-b="(pi/2, 1)" dashed></math-plot-line>
+
+            <math-plot-line-segment color="#ff0000" point-a="(pi, 0)" point-b="(pi, 1)" label="d"></math-plot-line-segment>
+            <math-plot-line-segment color="#ff0000" point-a="(2pi, 1)" point-b="(2pi, 3)" label="c"></math-plot-line-segment>
+            <math-plot-line-segment color="#ff0000" point-a="(0, 2)" point-b="(pi/2, 2)" label="-a/b"></math-plot-line-segment>
+        </math-plot>
+        <math-plot width="250" height="250" pi-units
+            range-x="<list><cn>0</cn><apply><times/><cn>2</cn><pi/></apply></list>"
+            range-y="<list><cn>-1</cn><cn>3</cn></list>">
+            <math-plot-function rule="<apply><plus/><apply><times/><cn>2</cn><apply><sin/><apply><minus/><ci>x</ci><apply><divide/><pi/><cn>2</cn></apply></apply></apply></apply><cn>1</cn></apply>"></math-plot-function>
+
+            <math-plot-line color="#0000ff" dashed
+                point-a="<list><cn>0</cn><cn>1</cn></list>"
+                point-b="<list><cn>1</cn><cn>1</cn></list>"></math-plot-line>
+            <math-plot-line color="#0000ff" dashed
+                point-a="<list><apply><divide/><pi/><cn>2</cn></apply><cn>0</cn></list>"
+                point-b="<list><apply><divide/><pi/><cn>2</cn></apply><cn>1</cn></list>"></math-plot-line>
+
+            <math-plot-line-segment color="#ff0000" label="d"
+                point-a="<list><pi/><cn>0</cn></list>"
+                point-b="<list><pi/><cn>1</cn></list>"></math-plot-line-segment>
+            <math-plot-line-segment color="#ff0000" label="c"
+                point-a="<list><apply><times/><cn>2</cn><pi/></apply><cn>1</cn></list>"
+                point-b="<list><apply><times/><cn>2</cn><pi/></apply><cn>3</cn></list>"></math-plot-line-segment>
+            <math-plot-line-segment color="#ff0000" label="-a/b"
+                point-a="<list><cn>0</cn><cn>2</cn></list>"
+                point-b="<list><apply><divide/><pi/><cn>2</cn></apply><cn>2</cn></list>"></math-plot-line-segment>
+        </math-plot>
+        <math-plot width="250" height="250" range-x="(0, 2pi)" range-y="(-2, 2)" pi-units>
+            <math-plot-function rule="<apply><sin/><ci>x</ci></apply>" domain="(pi/2, 2000000pi)"></math-plot-function>
+            <math-plot-function rule="<apply><abs/><ci>x</ci></apply>"></math-plot-function>
+            <math-plot-text top="<cn>2</cn>" left="pi" text="x"></math-plot-text>
+        </math-plot>
+        <math-plot width="250" height="250" range-x="(0, 2pi)" range-y="(-1, 1)" pi-units>
+            <math-plot-function rule="<apply><sin/><ci>x</ci></apply>"></math-plot-function>
+            <math-plot-asymptote x-intercept="2pi"></math-plot-asymptote>
+        </math-plot>
+        <math-plot width="250" height="250" range-x="(0, 5)" range-y="(-3, 3)">
+            <math-plot-function rule="<apply><ln/><ci>x</ci></apply>"></math-plot-function>
+            <math-plot-point position="(1, 0)" color="#ff0000" label-coordinates></math-plot-point>
+            <math-plot-point position="(4, 0)" color="#ff0000" label="(4, 0)"></math-plot-point>
+            <math-plot-point position="(5, 2)" color="#ff0000" label="(5, 2)"></math-plot-point>
+            <math-plot-point position="(5, -3)" color="#ff0000" label-coordinates></math-plot-point>
+        </math-plot>
+    </body>
+</html>
