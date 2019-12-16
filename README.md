@@ -112,7 +112,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-function>
 
 | Attribute | Value                | Default    | Description                 |
 | --------- | -------------------- | ---------- | --------------------------- |
-| rule      | *MathML*             | *Required* | The function to be plotted. |
+| rule      | MathML*              | *Required* | The function to be plotted. |
 | domain    | Rational pair* or MathML `<list>`* | *None* | The domain in which the function will be plotted. If undefined, the function will be plotted over its natural domain. |
 | color     | CSS color descriptor | #000000    | The color of the plotted function. |
 | dashed    | *No value*           | -          | If included, the curve will be dashed rather than solid. |
@@ -220,3 +220,28 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-text>` el
 Only one of `top` and `bottom` will be used. If both are present, `top` will be used. Similarly, for `left` and `right`, `left` will be preferenced.
 
 The position attributes should be given in terms of coordinates on the graph. A text element at `top="1" left="1"` will be rendered with its top-left corner at the point `(1, 1)` on the graph.
+
+#### Plotting filled regions: `<math-plot-floodfill>`
+
+Should be included as a direct child of `<math-plot>`. The `<math-plot-floodfill>` element will floodfill a region described below.
+
+| Attribute   | Value                | Default    | Description                  |
+| ----------- | -------------------- | ---------- | ---------------------------- |
+| rule-top    | MathML*              | *None*     | The top of the region to be filled.    |
+| rule-bottom | MathML*              | *None*     | The bottom of the region to be filled. |
+| domain      | Rational pair* or MathML `<list>`* | *None* | The domain in which the region will be filled. |
+| color       | CSS color descriptor | #d4d4d4    | The color of the filled region. |
+
+##### The filled region
+If both the `rule-top` and `rule-bottom` attributes are defined, the space between them will be filled regardless of which is on top across the entire `domain`, even if they cross within the domain. You could, for example, plot the space between `sin(x)` and the `x` axis using:
+
+```html
+<math-plot-floodfill
+    rule-top="<apply><sin/><ci>x</ci></apply>"
+    rule-bottom="<cn>0</cn>">
+</math-plot-floodfill>
+```
+
+If only `rule-top` is defined, the space between it and the bottom of the plot will be filled. If only `rule-bottom` is defined, the space between it and the top of the plot will be filled.
+
+If `domain` is undefined, the region will be filled over the domain of the plot. This may result in unexpected behaviour if either `rule-top` or `rule-bottom` is not defined over the entire plot.

@@ -34,10 +34,15 @@ const MINSTEPSIZE = 40;
 
 // The default properties of all canvas lines (used for functions, asymptotes,
 // etc.)
-const DEFAULT_PLOT_PARAMETERS = {
+const DEFAULT_LINE_PARAMETERS = {
     lineWidth: 2,
     color: '#000000',
-    lineDash: []
+    lineDash: [],
+};
+
+// The default properties of all canvas filled areas (used for floodfill)
+const DEFAULT_FILL_PARAMETERS = {
+    color: '#d4d4d4',
 };
 
 // The template used to build the <math-plot> WebComponent's ShadowRoot
@@ -368,35 +373,64 @@ class MathPlot extends HTMLElement {
     }
 
     /**
-     * Connected to the DOM. Draw the axes, then all of the curves.
+     * The custom element is now connected to the DOM. Draw the axes, and all
+     * the <math-plot-...> child elements.
      */
     connectedCallback() {
+        // split elements into those which need to be plotted before the axes
+        // are drawn, and those to be plotted after.
+        const PLOT_BEFORE_AXES = ['floodfill'];
+        let [plot_before, plot_after] = Array.from(this.children).reduce(
+            function([before, after], el) {
+                //get the tag of each element, and remove leading "math-plot-"
+                let tag = el.tagName.toLowerCase().substring(TAGNAME.length + 1);
+
+                return PLOT_BEFORE_AXES.includes(tag) ?
+                       [[...before, el], after] :
+                       [before, [...after, el]];
+            },
+            [[], []]
+        );
+
+        plot_before.map(this._plotElement, this);
+
         this.drawAxes();
 
-        for(let child of this.children) {
-            let tag = child.tagName.toLowerCase();
-            tag = tag.substring(TAGNAME.length + 1); // remove math-plot-
+        plot_after.map(this._plotElement, this);
+    }
 
-            switch(tag) {
-                case 'function':
-                    this._plotFunctionElement(child);
-                    break;
-                case 'line':
-                    this._plotLineElement(child);
-                    break;
-                case 'line-segment':
-                    this._plotLineSegmentElement(child);
-                    break;
-                case 'asymptote':
-                    this._plotAsymptoteElement(child);
-                    break;
-                case 'point':
-                    this._plotPointElement(child);
-                    break;
-                case 'text':
-                    this._plotTextElement(child);
-                    break;
-            }
+    /**
+     * Given any HTML element of the form <math-plot-...>, plot the feature
+     * described.
+     * 
+     * @param  {HTMLElement} el The <math-plot-...> element
+     */
+    _plotElement(el) {
+        let tag = el.tagName.toLowerCase();
+        tag = tag.substring(TAGNAME.length + 1); // remove "math-plot-"
+
+        switch(tag) {
+            case 'function':
+                this._plotFunctionElement(el);
+                break;
+            case 'line':
+                this._plotLineElement(el);
+                break;
+            case 'line-segment':
+                this._plotLineSegmentElement(el);
+                break;
+            case 'asymptote':
+                this._plotAsymptoteElement(el);
+                break;
+            case 'point':
+                this._plotPointElement(el);
+                break;
+            case 'text':
+                this._plotTextElement(el);
+                break;
+            case 'floodfill':
+                this._plotFloodfillElement(el);
+                break;
         }
     }
 
@@ -565,6 +599,42 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Given a <math-plot-floodfill> element, flood the region described.
+     *
+     * If both the `rule-top` and `rule-bottom` attributes are defined, the
+     * space between them will be filled regardless of which is on top across
+     * the entire `domain`.
+     * If only `rule-top` is defined, the space between it and the bottom of
+     * `this`.`drawRegion` will be filled.
+     * If only `rule-bottom` is defined, the space between it and the top of
+     * `this`.`drawRegion` will be filled.
+     * 
+     * @param  {HTMLElement} el The <math-plot-floodfill> element
+     */
+    _plotFloodfillElement(el) {
+        let rule_top = el.getAttribute('rule-top') || `<cn>${this.drawRegion.top}</cn>`;
+        let rule_bottom = el.getAttribute('rule-bottom') || `<cn>${this.drawRegion.bottom}</cn>`;
+        let mathml_top = new MathML(rule_top);
+        let mathml_bottom = new MathML(rule_bottom);
+        let domain = el.getAttribute('domain');
+        let params = this._getParams(el);
+
+        if(domain !== null) {
+            domain = this._parseListToApprox(domain);
+
+            domain[0] = Math.max(domain[0], this.drawRegion.left);
+            domain[1] = Math.min(domain[1], this.drawRegion.right);
+
+            assert(domain.length === 2,
+                '<math-plot-floodfill> Invalid domain provided.')
+
+            this.plotFloodfill(params, mathml_top.exec, mathml_bottom.exec, domain);
+        } else {
+            this.plotFloodfill(params, mathml_top.exec, mathml_bottom.exec);
+        }
+    }
+
+    /**
      * Given a <math-plot-?> subelement, collect its generic properties, like
      * color and whether or not it's dashed, and return them as an object to
      * be used in _plotRender().
@@ -594,6 +664,8 @@ class MathPlot extends HTMLElement {
      * Finally, label all of the unit markers.
      */
     drawAxes() {
+        this.context.fillStyle = DEFAULT_LINE_PARAMETERS.color;
+
         if(this.drawYAxis) {
             assert(this.range.x.min <= 0 && this.range.y.max >= 0,
                 'Cannot draw the y axis as it is out of range.')
@@ -949,7 +1021,7 @@ class MathPlot extends HTMLElement {
         // coordinates.
         let xPosCanvasCoords = this.center.x + pos[0] * this.unitSize.x;
         let yPosCanvasCoords = this.center.y - pos[1] * this.unitSize.y;
-        let parms = Object.assign({}, DEFAULT_PLOT_PARAMETERS, params);
+        let parms = Object.assign({}, DEFAULT_LINE_PARAMETERS, params);
 
         this.context.beginPath();
         this.context.arc(xPosCanvasCoords, yPosCanvasCoords, POINTRADIUS, 0,
@@ -1006,20 +1078,84 @@ class MathPlot extends HTMLElement {
     }
 
     /**
+     * Given two (JavaScript) functions `func1` and `func2`, which will each
+     * convert an x coordinate into the appropriate y coordinate for a
+     * (mathematical) function, floodfill the area between those two functions
+     * within the `domain`.
+     * 
+     * @param  {Object}   params  Line parameters, @see _renderLine
+     * @param  {Function} func1   A JS function describing one bound of the
+     *                            filled region
+     * @param  {Function} func2   A JS function describing the other bound of
+     *                            the filled region
+     * @param  {Array}    domain  (Optional) The domain in which to draw the
+     *                            function
+     */
+    plotFloodfill(params, func1, func2, domain) {
+        //the distance in graph coords equal to a pixel, inverse of scale.x
+        let drawStep = 1 / this.scale.x;
+
+        if(typeof domain == "undefined") {
+            domain = [this.drawRegion.left, this.drawRegion.right];
+        }
+
+        this.context.save();
+            //move (0,0) to graph centre;
+            this.context.translate(this.center.x, this.center.y)
+            //change scale from pixels to graph units, and invert y axis
+            this.context.scale(this.scale.x, this.scale.y);
+            
+            this.context.beginPath();
+            this.context.moveTo(domain[0], func1(domain[0]));
+
+            // clip a y value to ensure it stays within the drawRegion
+            const clipY = (y) => Math.max(Math.min(y, this.drawRegion.top), this.drawRegion.bottom);
+            
+            for(var x = domain[0]; x <= domain[1]; x += drawStep) {
+                this.context.lineTo(x, clipY(func1(x)));
+            }
+
+            for(var x = domain[1]; x >= domain[0]; x -= drawStep) {
+                this.context.lineTo(x, clipY(func2(x)));
+            }
+
+            this.context.closePath();
+
+        this.context.restore();
+
+        // this._renderLine(params);
+        this._renderFill(params);
+    }
+
+    /**
      * Called by the various _plot* functions, sets context attributes to
-     * either their defauls (defined in DEFAULT_PLOT_PARAMETERS) or their
+     * either their defaults (defined in DEFAULT_LINE_PARAMETERS) or their
      * overrides in `parms`, then draws a line.
      *
      * @param  {Object} parms The overriden parameters, @see _getParams
      */
     _renderLine(parms) {
-        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
+        let params = Object.assign({}, DEFAULT_LINE_PARAMETERS, parms);
 
         this.context.lineJoin = "round";
         this.context.lineWidth = params.lineWidth;
         this.context.strokeStyle = params.color;
         this.context.setLineDash(params.lineDash);
         this.context.stroke();
+    }
+
+    /**
+     * Called by the various _plot* functions, sets context attributes to
+     * either their defauls (defined in DEFAULT_FILL_PARAMETERS) or their
+     * overrides in `parms`, then draws a line.
+     *
+     * @param  {Object} parms The overriden parameters, @see _getParams
+     */
+    _renderFill(parms) {
+        let params = Object.assign({}, DEFAULT_FILL_PARAMETERS, parms);
+
+        this.context.fillStyle = params.color;
+        this.context.fill();
     }
 
     /**
@@ -1035,7 +1171,7 @@ class MathPlot extends HTMLElement {
      * @param  {Object} pos   The position at which the text is to be rendered
      */
     _renderText(parms, text, pos) {
-        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
+        let params = Object.assign({}, DEFAULT_LINE_PARAMETERS, parms);
 
         let width = this.context.measureText(text).width;
         let scaledWidth = width / this.scale.x;
@@ -1163,6 +1299,20 @@ class MathPlotText extends HTMLElement {
 }
 
 
+/**
+ * Defines an area to be floodfilled on the MathPlot canvas.
+ * @see  MathPlotFloodfill
+ */
+class MathPlotFloodfill extends HTMLElement {
+    /**
+     * @constructs
+     */
+    constructor() {
+        super();
+    }
+}
+
+
 customElements.define(TAGNAME, MathPlot);
 customElements.define(TAGNAME + '-function', MathPlotFunction);
 customElements.define(TAGNAME + '-line', MathPlotLine);
@@ -1170,3 +1320,4 @@ customElements.define(TAGNAME + '-line-segment', MathPlotLineSegment);
 customElements.define(TAGNAME + '-asymptote', MathPlotAsymptote);
 customElements.define(TAGNAME + '-point', MathPlotPoint);
 customElements.define(TAGNAME + '-text', MathPlotText);
+customElements.define(TAGNAME + '-floodfill', MathPlotFloodfill);

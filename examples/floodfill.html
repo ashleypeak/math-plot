@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Math-plot floodfill examples</title>
+
+        <!-- webcomponents polyfill -->
+        <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+
+        <script type="module" src="../math-plot.js"></script>
+    </head>
+    <body>
+        <math-plot width="250" height="250" range-x="(0, 5)" range-y="(0, 5)">
+            <math-plot-floodfill
+                rule-top="<apply><sin/><ci>x</ci></apply>"
+                rule-bottom="<cn>0</cn>"></math-plot-floodfill>
+        </math-plot>
+        <math-plot width="250" height="250" range-x="(0, 5)" range-y="(0, 5)">
+            <math-plot-floodfill
+                rule-bottom="<apply><power/><exponentiale/><ci>x</ci></apply>"
+                domain="(0, 4)"
+                color="#ffd0d0"></math-plot-floodfill>
+            <math-plot-floodfill
+                rule-top="<apply><ln/><ci>x</ci></apply>"
+                rule-bottom="<cn>0</cn>"
+                domain="(1, 10)"
+                color="#d0d0ff"></math-plot-floodfill>
+            <math-plot-function
+                rule="<apply><power/><exponentiale/><ci>x</ci></apply>"
+                domain="(0, 4)"
+                color="#ff0000"></math-plot-function>
+            <math-plot-function
+                rule="<apply><ln/><ci>x</ci></apply>"
+                domain="(1, 10)"
+                color="#0000ff"></math-plot-function>
+        </math-plot>
+    </body>
+</html>
