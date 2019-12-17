@@ -8,11 +8,31 @@ This component defines the `<math-plot>` element, which will plot a cartesian pl
 
 The component is contained in three JavaScript files, `math-plot.js`, `mathml.js` and `rational.js`. Simply download them into your project folder, ensuring that they are all in the same directory.
 
-## Testing (for development)
+## Development
 
-Testing is handled by Jest testing framework. To install the required dependencies, run `npm install` in the project directory.
+Before doing any development work, NPM dependencies need to be installed. Run:
 
-To execute the tests, run `npm run test`.
+```bash
+$ npm install
+```
+
+### Setting up NodeJS dependencies
+
+The math-plot library uses the polylabel library to sensibly position some labels on its plots. As this is a NodeJS, not a frontend, library, it needs to be compiled using browserify. This step isn't needed for end-users, but will be needed if any changes need to be made to the NodeJS dependencies.
+
+Any changes to node dependencies should be made in `node-main.js`. Once the changes are made, run the command:
+
+```bash
+$ browserify node-main.js -o dependencies.js
+```
+
+The file `dependencies.js` is automatically imported by `math-plot.js`, so nothing more need be done.
+
+**Do not edit `dependencies.js`, make changes in `node-main.js`.**
+
+### Testing
+
+Testing is handled by Jest testing framework. To execute the tests, run `npm run test`.
 
 ## Usage
 
@@ -230,7 +250,9 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-floodfill
 | rule-top    | MathML*              | *None*     | The top of the region to be filled.    |
 | rule-bottom | MathML*              | *None*     | The bottom of the region to be filled. |
 | domain      | Rational pair* or MathML `<list>`* | *None* | The domain in which the region will be filled. |
-| color       | CSS color descriptor | #d4d4d4    | The color of the filled region. |
+| label       | String               | *None*     | The text with which to label the the filled region. |
+| fill-color  | CSS color descriptor | #d4d4d4    | The color of the filled region. |
+| color       | CSS color descriptor | #000000    | The color of the label text. |
 
 ##### The filled region
 If both the `rule-top` and `rule-bottom` attributes are defined, the space between them will be filled regardless of which is on top across the entire `domain`, even if they cross within the domain. You could, for example, plot the space between `sin(x)` and the `x` axis using:

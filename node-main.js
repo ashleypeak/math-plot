@@ -1,0 +1,1 @@
+window.polylabel = require('polylabel');

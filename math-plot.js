@@ -1,3 +1,4 @@
+import './dependencies.js'
 import {Rational, RationalTuple} from './rational.js';
 import MathML from './mathml.js';
 
@@ -32,17 +33,12 @@ const FONTSIZE = 17;
 // The (default) minimum space, in pixels, between two axis markers
 const MINSTEPSIZE = 40;
 
-// The default properties of all canvas lines (used for functions, asymptotes,
-// etc.)
-const DEFAULT_LINE_PARAMETERS = {
+// The default properties of all canvas drawing
+const DEFAULT_PLOT_PARAMETERS = {
     lineWidth: 2,
     color: '#000000',
+    fillColor: '#d4d4d4',
     lineDash: [],
-};
-
-// The default properties of all canvas filled areas (used for floodfill)
-const DEFAULT_FILL_PARAMETERS = {
-    color: '#d4d4d4',
 };
 
 // The template used to build the <math-plot> WebComponent's ShadowRoot
@@ -617,6 +613,7 @@ class MathPlot extends HTMLElement {
         let mathml_top = new MathML(rule_top);
         let mathml_bottom = new MathML(rule_bottom);
         let domain = el.getAttribute('domain');
+        let label = el.getAttribute('label');
         let params = this._getParams(el);
 
         if(domain !== null) {
@@ -627,11 +624,9 @@ class MathPlot extends HTMLElement {
 
             assert(domain.length === 2,
                 '<math-plot-floodfill> Invalid domain provided.')
-
-            this.plotFloodfill(params, mathml_top.exec, mathml_bottom.exec, domain);
-        } else {
-            this.plotFloodfill(params, mathml_top.exec, mathml_bottom.exec);
         }
+
+        this.plotFloodfill(params, mathml_top.exec, mathml_bottom.exec, domain, label);
     }
 
     /**
@@ -651,6 +646,11 @@ class MathPlot extends HTMLElement {
             params.color = color;
         }
 
+        let fillColor = el.getAttribute('fill-color');
+        if(fillColor !== null) {
+            params.fillColor = fillColor;
+        }
+
         let dashed = el.getAttribute('dashed');
         if(dashed !== null) {
             params.lineDash = [10, 5];
@@ -664,7 +664,7 @@ class MathPlot extends HTMLElement {
      * Finally, label all of the unit markers.
      */
     drawAxes() {
-        this.context.fillStyle = DEFAULT_LINE_PARAMETERS.color;
+        this.context.fillStyle = DEFAULT_PLOT_PARAMETERS.color;
 
         if(this.drawYAxis) {
             assert(this.range.x.min <= 0 && this.range.y.max >= 0,
@@ -1021,7 +1021,7 @@ class MathPlot extends HTMLElement {
         // coordinates.
         let xPosCanvasCoords = this.center.x + pos[0] * this.unitSize.x;
         let yPosCanvasCoords = this.center.y - pos[1] * this.unitSize.y;
-        let parms = Object.assign({}, DEFAULT_LINE_PARAMETERS, params);
+        let parms = Object.assign({}, DEFAULT_PLOT_PARAMETERS, params);
 
         this.context.beginPath();
         this.context.arc(xPosCanvasCoords, yPosCanvasCoords, POINTRADIUS, 0,
@@ -1082,6 +1082,8 @@ class MathPlot extends HTMLElement {
      * convert an x coordinate into the appropriate y coordinate for a
      * (mathematical) function, floodfill the area between those two functions
      * within the `domain`.
+     *
+     * If `label` !== null, write the label as well.
      * 
      * @param  {Object}   params  Line parameters, @see _renderLine
      * @param  {Function} func1   A JS function describing one bound of the
@@ -1090,12 +1092,13 @@ class MathPlot extends HTMLElement {
      *                            the filled region
      * @param  {Array}    domain  (Optional) The domain in which to draw the
      *                            function
+     * @param  {String}   label   (Optional) A text label for the line segment
      */
-    plotFloodfill(params, func1, func2, domain) {
+    plotFloodfill(params, func1, func2, domain, label) {
         //the distance in graph coords equal to a pixel, inverse of scale.x
         let drawStep = 1 / this.scale.x;
 
-        if(typeof domain == "undefined") {
+        if(typeof domain === "undefined" || domain === null) {
             domain = [this.drawRegion.left, this.drawRegion.right];
         }
 
@@ -1106,36 +1109,53 @@ class MathPlot extends HTMLElement {
             this.context.scale(this.scale.x, this.scale.y);
             
             this.context.beginPath();
+
             this.context.moveTo(domain[0], func1(domain[0]));
+            // used to plot the label, if there is one
+            let poly = [[domain[0], func1(domain[0])]];
 
             // clip a y value to ensure it stays within the drawRegion
             const clipY = (y) => Math.max(Math.min(y, this.drawRegion.top), this.drawRegion.bottom);
             
             for(var x = domain[0]; x <= domain[1]; x += drawStep) {
-                this.context.lineTo(x, clipY(func1(x)));
+                let y = clipY(func1(x));
+
+                this.context.lineTo(x, y);
+                poly.push([x, y]);
             }
 
             for(var x = domain[1]; x >= domain[0]; x -= drawStep) {
-                this.context.lineTo(x, clipY(func2(x)));
+                let y = clipY(func2(x));
+
+                this.context.lineTo(x, y);
+                poly.push([x, y]);
             }
 
             this.context.closePath();
+            // The polygon array needs to be a closed loop, so add the first
+            // point again to the end.
+            poly.push(poly[0]);
 
         this.context.restore();
-
-        // this._renderLine(params);
         this._renderFill(params);
+
+        if(label !== null) {
+            let midPoint = polylabel([poly]);
+            let pos = {centerX: midPoint[0], centerY: midPoint[1]};
+
+            this._renderText(params, label, pos);
+        }
     }
 
     /**
      * Called by the various _plot* functions, sets context attributes to
-     * either their defaults (defined in DEFAULT_LINE_PARAMETERS) or their
+     * either their defaults (defined in DEFAULT_PLOT_PARAMETERS) or their
      * overrides in `parms`, then draws a line.
      *
      * @param  {Object} parms The overriden parameters, @see _getParams
      */
     _renderLine(parms) {
-        let params = Object.assign({}, DEFAULT_LINE_PARAMETERS, parms);
+        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
 
         this.context.lineJoin = "round";
         this.context.lineWidth = params.lineWidth;
@@ -1146,15 +1166,15 @@ class MathPlot extends HTMLElement {
 
     /**
      * Called by the various _plot* functions, sets context attributes to
-     * either their defauls (defined in DEFAULT_FILL_PARAMETERS) or their
+     * either their defauls (defined in DEFAULT_PLOT_PARAMETERS) or their
      * overrides in `parms`, then draws a line.
      *
      * @param  {Object} parms The overriden parameters, @see _getParams
      */
     _renderFill(parms) {
-        let params = Object.assign({}, DEFAULT_FILL_PARAMETERS, parms);
+        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
 
-        this.context.fillStyle = params.color;
+        this.context.fillStyle = params.fillColor;
         this.context.fill();
     }
 
@@ -1171,7 +1191,7 @@ class MathPlot extends HTMLElement {
      * @param  {Object} pos   The position at which the text is to be rendered
      */
     _renderText(parms, text, pos) {
-        let params = Object.assign({}, DEFAULT_LINE_PARAMETERS, parms);
+        let params = Object.assign({}, DEFAULT_PLOT_PARAMETERS, parms);
 
         let width = this.context.measureText(text).width;
         let scaledWidth = width / this.scale.x;
