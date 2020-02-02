@@ -143,6 +143,12 @@ test('tofunction-root-square', function() {
         .toEqual(9);
 });
 
+test('tofunction-root-square-default', function() {
+    // if only one argument is passed, return the square root
+    expect(mathml('<apply><root/><cn>81</cn></apply>').exec())
+        .toEqual(9);
+});
+
 test('tofunction-root-cube', function() {
     expect(mathml('<apply><root/><cn>3</cn><cn>27</cn></apply>').exec())
         .toEqual(3);

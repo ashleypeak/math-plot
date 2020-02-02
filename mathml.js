@@ -168,8 +168,14 @@ class MathML {
                 this._assertChildren(node, 3);
                 return ((x) => args[0](x) ** args[1](x));
             case 'root':
-                this._assertChildren(node, 3);
-                return ((x) => args[1](x) ** (1 / args[0](x)));
+                assert(node.childElementCount === 2 || node.childElementCount === 3,
+                    '<apply><root/> must have 2 or 3 children.');
+
+                if(node.childElementCount === 3) {
+                    return ((x) => args[1](x) ** (1 / args[0](x)));
+                } else {
+                    return ((x) => Math.sqrt(args[0](x)));
+                }
             case 'sin':
                 this._assertChildren(node, 2);
                 return ((x) => Math.sin(args[0](x)));
