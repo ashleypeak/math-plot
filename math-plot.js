@@ -104,6 +104,7 @@ class MathPlot extends HTMLElement {
         this.height = this.getAttribute('height') || 300;
         this.drawXAxis = this.getAttribute('hide-x-axis') !== null ? false : true;
         this.drawYAxis = this.getAttribute('hide-y-axis') !== null ? false : true;
+        this.drawOrigin = this.getAttribute('hide-origin') !== null ? false : true;
         this.drawGrid = this.getAttribute('show-grid') !== null ? true : false;
         //indicates that the x axis only should be measured in multiples of pi
         this.piUnits = this.getAttribute('pi-units') !== null ? true : false;
@@ -767,8 +768,10 @@ class MathPlot extends HTMLElement {
         }
 
         //draw origin
-        let origin = new Rational(0);
-        origin.draw(this.context, {top: this.center.y, right: this.center.x});
+        if(this.drawOrigin) {
+            let origin = new Rational(0);
+            origin.draw(this.context, {top: this.center.y, right: this.center.x});
+        }
     }
 
     /**

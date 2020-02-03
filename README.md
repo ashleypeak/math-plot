@@ -79,6 +79,7 @@ The `<math-plot>` element will create a canvas, and draw a cartesian plane on it
 | show-grid     | *No value*     | -            | Show dotted lines across the graph at each unit marker. |
 | hide-x-axis   | *No value*     | -            | Don't render the x axis. |
 | hide-y-axis   | *No value*     | -            | Don't render the y axis. |
+| hide-origin   | *No value*     | -            | Don't render the 0 marking the origin. |
 | pi-units      | *No value*     | -            | Mark the x axis in multiples of π, e.g. for plotting circular functions. |
 | step-x        | Rational* or MathML* | *Calculated* | The distance between unit markers on the x axis. |
 | step-y        | Rational* or MathML* | *Calculated* | The distance between unit markers on the y axis. |
