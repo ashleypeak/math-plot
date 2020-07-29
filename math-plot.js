@@ -554,6 +554,14 @@ class MathPlot extends HTMLElement {
             label = {type: 'coordinates', tuple: pos};
         }
 
+        let labelPosStr = el.getAttribute('label-position');
+        if (labelPosStr !== null) {
+            let matches = labelPosStr.match(/^(top|bottom) (left|right)$/);
+            if(matches !== null) {
+                label.position = {vertical: matches[1], horizontal: matches[2]};
+            }
+        }
+
         let params = this._getParams(el);
 
         assert(pos.length === 2,
@@ -1037,9 +1045,20 @@ class MathPlot extends HTMLElement {
             let positionCanvas = {left: pos[0]*this.scale.x + this.center.x,
                                   top: pos[1]*this.scale.y + this.center.y};
 
-            // if point is on the x axis or at the bottom of the range, plot
-            // the label above rather than below
-            if(pos[1] == 0 || pos[1] <= this.range.y.min) {
+
+            if(!("position" in label)) {
+                // If the position of the label isn't set:
+                label.position = {
+                    // if point is on the x axis or at the bottom of the range, plot
+                    // the label above rather than below
+                    vertical: (pos[1] == 0 || pos[1] <= this.range.y.min) ? "top" : "bottom",
+                    // if point is at the right of the range, plot the label to the
+                    // left rather than below
+                    horizontal: pos[0] >= this.range.x.max ? "left" : "right"
+                };
+            }
+
+            if(label.position.vertical == "top") {
                 positionPixels.bottom = positionPixels.top;
                 positionCanvas.bottom = positionCanvas.top;
 
@@ -1047,9 +1066,7 @@ class MathPlot extends HTMLElement {
                 delete positionCanvas.top;
             }
 
-            // if point is at the right of the range, plot the label to the
-            // left rather than below
-            if(pos[0] >= this.range.x.max) {
+            if(label.position.horizontal == "left") {
                 positionPixels.right = positionPixels.left;
                 positionCanvas.right = positionCanvas.left;
 
