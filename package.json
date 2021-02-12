@@ -20,12 +20,12 @@
   },
   "homepage": "https://github.com/wyattpeak/math-plot#readme",
   "devDependencies": {
-    "@babel/preset-env": "^7.7.6",
-    "babel-jest": "^24.9.0",
-    "jest": "^24.9.0",
-    "polylabel": "^1.0.2"
+    "@babel/preset-env": "^7.12.16",
+    "babel-jest": "^26.6.3",
+    "jest": "^26.6.3",
+    "polylabel": "^1.1.0"
   },
   "dependencies": {
-    "@webcomponents/webcomponentsjs": "^2.4.0"
+    "@webcomponents/webcomponentsjs": "^2.5.0"
   }
 }
