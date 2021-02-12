@@ -547,6 +547,11 @@ class MathPlot extends HTMLElement {
     _plotPointElement(el) {
         let pos = this._parseListToRational(el.getAttribute('position'));
 
+        let radius = POINTRADIUS;
+        if(el.getAttribute('radius') !== null) {
+            radius = el.getAttribute('radius');
+        }
+
         let label = null;
         if(el.getAttribute('label') !== null) {
             label = {type: 'text', value: el.getAttribute('label')};
@@ -567,7 +572,7 @@ class MathPlot extends HTMLElement {
         assert(pos.length === 2,
             '<math-plot-point> Invalid position provided.');
 
-        this.plotPoint(params, pos.approx, label);
+        this.plotPoint(params, pos.approx, radius, label);
     }
 
     /**
@@ -1024,9 +1029,10 @@ class MathPlot extends HTMLElement {
      * 
      * @param  {Object} params Point/label parameters, @see _renderLine
      * @param  {Array}  pos    The position of the point being plotted
+     * @param  {Int}    radius The radius, in pixels, of the point
      * @param  {String} label  (Optional) A text label for the point
      */
-    plotPoint(params, pos, label) {
+    plotPoint(params, pos, radius, label) {
         // Can't transform canvas because if x and y scales aren't the same the
         // point will be deformed. Instead, calculate point position in canvas
         // coordinates.
@@ -1035,7 +1041,7 @@ class MathPlot extends HTMLElement {
         let parms = Object.assign({}, DEFAULT_PLOT_PARAMETERS, params);
 
         this.context.beginPath();
-        this.context.arc(xPosCanvasCoords, yPosCanvasCoords, POINTRADIUS, 0,
+        this.context.arc(xPosCanvasCoords, yPosCanvasCoords, radius, 0,
                          2*Math.PI);
         this.context.fillStyle = parms.color;
         this.context.fill();

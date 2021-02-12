@@ -214,6 +214,7 @@ Should be included as a direct child of `<math-plot>`. The `<math-plot-point>` e
 | label             | String                             | *None*     | A text label for the point. |
 | label-coordinates | *No value*                         | -          | Label the point with the coordinates of the point in the form `(a, b)`. |
 | label-position    | /^(top\|bottom) (left\|right)$/    | -          | The position of the label with respect to the point. |
+| radius            | Integer                            | 3          | The radius of the point in pixels. This default value can be changed using the POINTRADIUS global. |
 | color             | CSS color descriptor               | #000000    | The color of the point. |
 
 ##### Label position
