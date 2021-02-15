@@ -63,6 +63,10 @@ test('construct-float', function() {
     expect(rational(0.5).approx).toEqual(0.5);
 });
 
+test('construct-float-to-int', function() {
+    expect(rational(3.0000000000000004).approx).toEqual(3);
+});
+
 test('add-int-int', function() {
     let a = rational(1);
     let b = rational(2);
@@ -355,6 +359,18 @@ test('power-complex-e', function() {
     let correct = 8 / (27 * (Math.E ** 3));
 
     expect(round_to_10(result)).toEqual(round_to_10(correct));
+});
+
+test('abs-int-noaction', function() {
+    let a = rational(3);
+
+    expect(a.abs().approx).toEqual(3);
+});
+
+test('abs-int', function() {
+    let a = rational(-3);
+
+    expect(a.abs().approx).toEqual(3);
 });
 
 test('equal-int-int-true', function() {

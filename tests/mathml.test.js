@@ -83,6 +83,77 @@ test('torational-approx', function() {
     expect(approx(rationalApprox, 2)).toEqual(6.28);
 });
 
+test('torational-sqrt', function() {
+    expect(mathml('<apply><root/><cn>9</cn></apply>').rational)
+        .toStrictEqual(new Rational(3));
+});
+
+test('torational-root-arbitrary', function() {
+    expect(mathml('<apply><root/><degree><cn>3</cn></degree><cn>64</cn></apply>').rational)
+        .toStrictEqual(new Rational(4));
+});
+
+test('torational-sin-exact', function() {
+    expect(mathml('<apply><sin/><cn>0</cn></apply>').rational)
+        .toStrictEqual(new Rational(0));
+});
+
+test('torational-sin-approx', function() {
+    let rationalApprox = mathml(
+        '<apply><sin/><apply><divide/><pi/><cn>4</cn></apply></apply>')
+            .rational.approx;
+    expect(approx(rationalApprox, 3)).toEqual(0.707);
+});
+
+test('torational-cos-exact', function() {
+    expect(mathml('<apply><cos/><cn>0</cn></apply>').rational)
+        .toStrictEqual(new Rational(1));
+});
+
+test('torational-cos-approx', function() {
+    let rationalApprox = mathml(
+        '<apply><cos/><apply><divide/><pi/><cn>4</cn></apply></apply>')
+            .rational.approx;
+    expect(approx(rationalApprox, 3)).toEqual(0.707);
+});
+
+test('torational-tan-exact', function() {
+    expect(mathml('<apply><tan/><cn>0</cn></apply>').rational)
+        .toStrictEqual(new Rational(0));
+});
+
+test('torational-tan-approx', function() {
+    let rationalApprox = mathml(
+        '<apply><tan/><apply><divide/><pi/><cn>6</cn></apply></apply>')
+            .rational.approx;
+    expect(approx(rationalApprox, 3)).toEqual(0.577);
+});
+
+test('torational-abs-noaction', function() {
+    expect(mathml('<apply><abs/><exponentiale/></apply>').rational)
+        .toStrictEqual(new Rational('e'));
+});
+
+test('torational-abs', function() {
+    expect(mathml('<apply><abs/><apply><minus/><pi/></apply></apply>').rational)
+        .toStrictEqual(new Rational('pi'));
+});
+
+test('torational-ln', function() {
+    expect(mathml('<apply><ln/><exponentiale/></apply>').rational)
+        .toStrictEqual(new Rational(1));
+});
+
+test('torational-log-10', function() {
+    expect(mathml('<apply><log/><cn>100</cn></apply>').rational)
+        .toStrictEqual(new Rational(2));
+});
+
+test('torational-log-arbitrary', function() {
+    expect(mathml('<apply><log/><logbase><cn>3</cn></logbase><cn>27</cn></apply>').rational)
+        .toStrictEqual(new Rational(3));
+});
+
 test('torational-tuple', function() {
     expect(mathml('<list><cn>3</cn><pi/></list>').rational)
         .toStrictEqual(new RationalTuple("(3, pi)"));

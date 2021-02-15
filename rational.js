@@ -83,11 +83,18 @@ class Rational {
         // if numerator is a float
         if(Number(numerator) === numerator && numerator % 1 !== 0) {
             let rounded = Math.round(numerator * 1000000000) / 1000000000;
-            let mantissaLength = rounded.toString().split('.')[1].length;
-            let mult = Math.pow(10, mantissaLength);
+            let roundedString = rounded.toString();
 
-            numerator = rounded * mult;
-            denominator = mult;
+            if(roundedString.indexOf('.') === -1) {
+                // if the float is within 1e-9 of an integer
+                numerator = rounded;
+            } else {
+                let mantissaLength = roundedString.split('.')[1].length;
+                let mult = Math.pow(10, mantissaLength);
+
+                numerator = rounded * mult;
+                denominator = mult;
+            }
         }
 
         let num = this._parseInput(numerator);
@@ -305,6 +312,24 @@ class Rational {
             this.eFactor * number.numerator);
 
         ret.simplify();
+        return ret;
+    }
+
+    /**
+     * Returns the absolute value of this Rational as a new Rational, but does
+     * not mutate this object.
+     * 
+     * @return {Rational}  The absolute value of this Rational
+     */
+    abs() {
+        let ret = new Rational(
+            this.numerator,
+            this.denominator,
+            this.piFactor,
+            this.eFactor);
+
+        ret.simplify();
+        ret.numerator = Math.abs(ret.numerator);
         return ret;
     }
 

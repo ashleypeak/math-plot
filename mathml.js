@@ -223,8 +223,9 @@ class MathML {
                 assert(/^-?[0-9]+(\.[0-9]+)?$/.test(node.textContent), '<cn> must contain a number.');
 
                 return new Rational(parseFloat(node.textContent));
-            // case 'degree':
-            //     return this._parseNodeToRational(node.firstChild);
+            case 'degree':
+            case 'logbase':
+                return this._parseNodeToRational(node.firstChild);
             case 'pi':
                 return new Rational(1, 1, 1);
             case 'exponentiale':
@@ -280,6 +281,46 @@ class MathML {
                 this._assertChildren(node, 3);
 
                 return args[0].power(args[1]);
+            case 'root':
+                assert(node.childElementCount === 2 || node.childElementCount === 3,
+                    '<apply><root/> must have 2 or 3 children.');
+
+                if(node.childElementCount === 3) {
+                    return new Rational(args[1].approx ** (1 / args[0].approx));
+                } else {
+                    return new Rational(Math.sqrt(args[0].approx));
+                }
+            case 'sin':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.sin(args[0].approx))
+            case 'cos':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.cos(args[0].approx))
+            case 'tan':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.tan(args[0].approx))
+            case 'abs':
+                this._assertChildren(node, 2);
+
+                return args[0].abs();
+            case 'ln':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.log(args[0].approx))
+            case 'log':
+                let childCount = node.childElementCount;
+
+                assert([2, 3].includes(childCount),
+                    `<apply><log/> must have 1 or 2 children.`);
+
+                if(childCount === 2) {
+                    return new Rational(Math.log(args[0].approx) / Math.log(10));
+                } else {
+                    return new Rational(Math.log(args[1].approx) / Math.log(args[0].approx));
+                }
             default:
                 throw new Error('Unknown <apply> action: ' + action);
         }
