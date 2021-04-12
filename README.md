@@ -163,6 +163,9 @@ The following `<apply>` functions are implemented:
 | `<sin>` | |
 | `<cos>` | |
 | `<tan>` | |
+| `<arcsin>` | |
+| `<arccos>` | |
+| `<arctan>` | |
 | `<abs>` | |
 | `<log>` | `<logbase>` element is optional, but if included must be first argument. If not included, defaults to 10. |
 | `<ln>` | |

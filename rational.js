@@ -92,7 +92,7 @@ class Rational {
                 let mantissaLength = roundedString.split('.')[1].length;
                 let mult = Math.pow(10, mantissaLength);
 
-                numerator = rounded * mult;
+                numerator = Math.floor(rounded * mult);
                 denominator = mult;
             }
         }

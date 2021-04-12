@@ -129,6 +129,40 @@ test('torational-tan-approx', function() {
     expect(approx(rationalApprox, 3)).toEqual(0.577);
 });
 
+test('torational-arcsin-exact', function() {
+    expect(mathml('<apply><arcsin/><cn>0</cn></apply>').rational)
+        .toStrictEqual(new Rational(0));
+});
+
+test('torational-arcsin-approx', function() {
+    let rationalApprox = mathml('<apply><arcsin/><cn>0.5</cn></apply>')
+        .rational.approx;
+
+    expect(approx(rationalApprox, 3)).toEqual(approx(Math.PI/6, 3));
+});
+
+test('torational-arccos-exact', function() {
+    expect(mathml('<apply><arccos/><cn>1</cn></apply>').rational)
+        .toStrictEqual(new Rational(0));
+});
+
+test('torational-arccos-approx', function() {
+    let rationalApprox = mathml('<apply><arccos/><cn>0.5</cn></apply>')
+        .rational.approx;
+    expect(approx(rationalApprox, 3)).toEqual(approx(Math.PI/3, 3));
+});
+
+test('torational-arctan-exact', function() {
+    expect(mathml('<apply><arctan/><cn>0</cn></apply>').rational)
+        .toStrictEqual(new Rational(0));
+});
+
+test('torational-arctan-approx', function() {
+    let rationalApprox = mathml('<apply><arctan/><cn>1</cn></apply>')
+        .rational.approx;
+    expect(approx(rationalApprox, 3)).toEqual(approx(Math.PI/4, 3));
+});
+
 test('torational-abs-noaction', function() {
     expect(mathml('<apply><abs/><exponentiale/></apply>').rational)
         .toStrictEqual(new Rational('e'));

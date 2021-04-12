@@ -185,6 +185,15 @@ class MathML {
             case 'tan':
                 this._assertChildren(node, 2);
                 return ((x) => Math.tan(args[0](x)));
+            case 'arcsin':
+                this._assertChildren(node, 2);
+                return ((x) => Math.asin(args[0](x)));
+            case 'arccos':
+                this._assertChildren(node, 2);
+                return ((x) => Math.acos(args[0](x)));
+            case 'arctan':
+                this._assertChildren(node, 2);
+                return ((x) => Math.atan(args[0](x)));
             case 'abs':
                 this._assertChildren(node, 2);
                 return ((x) => Math.abs(args[0](x)));
@@ -302,6 +311,18 @@ class MathML {
                 this._assertChildren(node, 2);
 
                 return new Rational(Math.tan(args[0].approx))
+            case 'arcsin':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.asin(args[0].approx))
+            case 'arccos':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.acos(args[0].approx))
+            case 'arctan':
+                this._assertChildren(node, 2);
+
+                return new Rational(Math.atan(args[0].approx))
             case 'abs':
                 this._assertChildren(node, 2);
 
