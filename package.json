@@ -21,8 +21,8 @@
   "homepage": "https://github.com/wyattpeak/math-plot#readme",
   "devDependencies": {
     "@babel/preset-env": "^7.12.16",
-    "babel-jest": "^26.6.3",
-    "jest": "^26.6.3",
+    "babel-jest": "^27.2.5",
+    "jest": "^27.2.5",
     "polylabel": "^1.1.0"
   },
   "dependencies": {
