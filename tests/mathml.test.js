@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import {Rational, RationalTuple} from '../rational.js';
 import MathML from '../mathml.js';
 
